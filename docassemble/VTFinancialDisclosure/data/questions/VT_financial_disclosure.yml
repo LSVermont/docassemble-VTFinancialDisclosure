@@ -181,22 +181,26 @@ code: |
   users[0].email
   set_progress(14)
 
+  household_size
+  
   jobs.gather()
   if len(jobs) > 0:
     review_jobs
-  set_progress(45)
-    
-  
-  household_others_1_name
-
-  users1_receives_benefits
-  users1_benefits_monthly_amount
   set_progress(28)
-  employed
-  users1_income_employment_monthly_amount
+    
+  if len(public_benefits) > 0:
+    public_benefits.review_items
+  household_others_receive_benefits
+
+  if len(other_incomes) > 0:
+    other_incomes.review_items
   users1_income_investments_monthly_amount
+  set_progress(45)
+
   users1_income_very_different_30_days_yes
 
+
+  
   expenses_intro
   users1_expenses_rent_mortgage_monthly_amount
   set_progress(56)
@@ -761,22 +765,342 @@ edit:
 #  - "Your employer's address": users1_employer_1_address_one_line
 #    maxlength: 40
 ---
-id: Public assistance
+################################# PUBLIC BENEFITS ##############################
+comment: |
+  --Notes on how a list is gathered, using public_benefits as an example--
+  
+  Interview calls public_benefits.gather
+
+  Gather looks for .there_are_any
+
+  there_any_any asks for x.selected_types
+
+  if any selected types,
+   move_check_to_lists
+     This creates a number of elements in the list, and deletes 'source' if other, (which may set 'source' to the default, like 'vehicle')
+     also sets .moved for the list
+     
+  there_are_any is set to true
+
+  will then look for complete
+
+  check_for_others will set source
+
+  complete calls for attribute (value for public_benefits) for information question
+  
+  information question calls display name (with reconsider to keep it fresh)
+  
+  answering the question sets display_name fresh with new source_other with validation code
+
+  complete sets display  
+---
+id: public_benefits terms_ordered
+variable name: public_benefits.terms_ordered
+data: !!omap
+  - 3SquaresVT: "3SquaresVT (food)"
+  - Dr Dynasaur: "Dr. Dynasaur"
+  - Fuel Assist.: "Fuel Assistance"
+  - GA: "General Assistance (GA)"
+  - Housing Assist.: "Housing Assistance (subsidy/voucher/Section 8)"
+  - Medicaid: "Medicaid"
+  - Reach Up: "Reach Up"
+  - SSI: "SSI (Supplemental Security Income)"
+  - other: "Other"
+---
+id: public_benefits other display
+comment: |
+  This keeps the text that may be changed near the top of the public benefits section.
+  Used in:
+  Tell us about ______
+code: |
+  public_benefits_other_display = "another benefit that provides you income"
+---
+id: public_benefits object
+objects:
+  - public_benefits: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
+---
+id: public_benefits ordered object for checkboxes
+objects:
+  - public_benefits_ordered: DAOrderedDict.using(elements=public_benefits.terms_ordered, auto_gather=False, gathered=True)
+---
+id: ALIncomeList there are any
+generic object: ALIncomeList
+code: |
+  if x.selected_types.any_true():
+    x.move_checks_to_list(selected_terms=x.terms_ordered)
+    x.there_are_any = True
+  else:
+    x.there_are_any = False
+---
+id: are there public benefits
+#public_benefits
 question: |
-  Public assistance
+  Do you get public assistance?
+subquestion: |
+  Do you get any kind of government benefit that is based on need, disability, dependent children, or another reason based on your income?
+  
+  We've included a few examples below. You can also check "other."
+  
+  Check any that apply to you.
 fields:
-  - "Do you get public assistance?": users1_receives_benefits
-    datatype: yesno
+  - no label: public_benefits.selected_types
+    datatype: checkboxes
+    code: |
+      public_benefits_ordered
+    none of the above: |
+      None — No public assistance
+---
+id: ALIncome complete
+generic object: ALIncome
+code: |
+  x.value
+  x.complete = True
+---
+id: public benefits info for list
+#generic object: ALIncomeList
+reconsider: public_benefits[i].display_name
+question: |
+  Tell us about ${ public_benefits[i].display_name }
+subquestion: |
+  % if i > 1:
+  You have already told us about your benefits from ${ comma_and_list(public_benefit.display_name for public_benefit in public_benefits.complete_elements()) }.
+  % elif i > 0:
+  You have already told us about your benefits from ${ comma_and_list(public_benefit.display_name for public_benefit in public_benefits.complete_elements()) }.
+  % endif
+fields:
+  - Source of income: public_benefits[i].source
+    input type: dropdown
+    code: |
+      public_benefits_ordered
+  - What type of income?: public_benefits[i].source_other
+    maxlength: 13
+    show if:
+      variable: public_benefits[i].source
+      is: other
+  - Times per year you receive this income: public_benefits[i].times_per_year
+    input type: radio
+    default: 12
+    code: |
+      times_per_year_list
+    hide if:
+      variable: public_benefits[i].source
+      is: Medicaid or Dr Dynasaur
+  - Amount of income: public_benefits[i].value
+    datatype: currency    
+    hide if:
+      variable: public_benefits[i].source
+      is: Medicaid or Dr Dynasaur
+validation code: |
+  if public_benefits[i].source != "other":
+    public_benefits[i].display_name = public_benefits.terms_ordered.get(public_benefits[i].source, public_benefits[i].source)
+  else:
+    public_benefits[i].display_name = public_benefits[i].source_other
+---
+id: public_benefits set display name
+code: |
+  if defined('public_benefits[i].source') and public_benefits[i].source != "other":
+    public_benefits[i].display_name = public_benefits.terms_ordered.get(public_benefits[i].source, public_benefits[i].source)
+  elif defined('public_benefits[i].source') and public_benefits[i].source == "other" and defined('public_benefits[i].source_other'):
+    public_benefits[i].display_name = public_benefits[i].source_other
+  else:
+    public_benefits[i].display_name = public_benefits_other_display
+---
+id: public_benefits set Medicaid or Dr Dynasaur value to $0 because value varies
+code: |
+  if defined('public_benefits[i].source') and public_benefits[i].source == "Medicaid":
+    public_benefits[i].value = 0
+    public_benefits[i].times_per_year = 12
+  if defined('public_benefits[i].source') and public_benefits[i].source == "Dr Dynasaur":
+    public_benefits[i].value = 0
+    public_benefits[i].times_per_year = 12
+---
+id: want to add more public benefits
+question: Do you want to list any more public assistance?
+subquestion: |
+  Tap Next if you don't have more to add.
+  
+  ${ public_benefits_table }
+  
+  ${ public_benefits.add_action() }
+continue button field: public_benefits.review_items
+---
+id: public_benefits revisit
+continue button field: public_benefits.revisit
+question: |
+  Edit public assistance
+subquestion: |
+  ${ public_benefits_table }
+
+  ${ public_benefits.add_action() }
+---
+id: public_benefits table
+table: public_benefits_table
+rows: public_benefits
+columns:
+  - Source: |
+      row_item.display_name if defined("row_item.source") else ""
+  - Public assistance per month: |
+      currency(row_item.total(times_per_year=12)) if row_item.source == "Reach Up" or row_item.source == "3SquaresVT" or row_item.source == "GA" or row_item.source == "SSI" or row_item.source == "Fuel Assist." or row_item.source == "Housing Assist." or row_item.source == "other" else "Varies (can set to $0 for this form)"
+edit:
+  - source
+  - value
+---
+id: Public assistance household
+question: |
+  Public assistance in your household
+fields:
   - "Do others in your household get public assistance?": household_others_receive_benefits
-    datatype: yesno
+    datatype: yesnoradio
+---
+################################# OTHER INCOMES ##############################
+---
+variable name: other_incomes.terms_ordered
+data: !!omap
+  - unemployment income: "Unemployment benefits"
+  - child support income: "Child support"
+  - other: "Other"
+---
+variable name: help_text
+data: !!omap
+  - unemployment income help: "Enter gross amount of unemployment income -- before taxes were taken out."
+  - default: " "
+---
+## This keeps the text that may be changed near the top of the public benefits section.
+code: |
+  other_incomes_other_display = "other source of income"
+---
+objects:
+  - other_incomes: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
+---
+objects:
+  - other_incomes_ordered: DAOrderedDict.using(elements=other_incomes.terms_ordered, auto_gather=False, gathered=True)
+---
+comment: |
+  will use id: ALIncomeList there are any to set other_incomes.there_are_any
+---
+id: are there other incomes
+#other_incomes
+question: |
+  Do you have other sources of income?
+subquestion: |
+  Check any that apply to you.
+  
+  Do not include employment income here.
+fields:
+  - no label: other_incomes.selected_types
+    datatype: checkboxes
+    code: |
+      other_incomes_ordered
+  - note: |
+      **Other kinds of income could include:** Workers compensation, rental income, interest income, spousal maintenance (alimony), veteran's income, Social Security Disability, Social Security retirement, other retirement income or annuities.
+---
+comment: |
+  will use id: ALIncome complete to set other_incomes[i].complete
+---
+id: other income info for list
+#generic object: ALIncomeList
+reconsider: other_incomes[i].display_name
+question: |
+  Tell us about your ${ other_incomes[i].display_name.lower() }
+subquestion: |
+  % if i > 1:
+  You have already told us about your incomes from ${ comma_and_list(other_income.display_name for other_income in other_incomes.complete_elements()) }.
+  % elif i > 0:
+  You have already told us about your income from ${ comma_and_list(other_income.display_name for other_income in other_incomes.complete_elements()) }.
+  % endif
+fields:
+  - Source of income: other_incomes[i].source
+    input type: dropdown
+    code: |
+      other_incomes_ordered
+  - What type of income?: other_incomes[i].source_other
+    show if:
+      variable: other_incomes[i].source
+      is: other
+  - Times per year you receive this income: other_incomes[i].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+  - Amount of income: other_incomes[i].value
+    datatype: currency
+  - note: |
+      ${ help_text['unemployment income help'] }
+    show if:
+      variable: other_incomes[i].source
+      is: unemployment income
+validation code: |
+  if other_incomes[i].source != "other":
+    other_incomes[i].display_name = other_incomes.terms_ordered.get(other_incomes[i].source, other_incomes[i].source)
+  else:
+    other_incomes[i].display_name = other_incomes[i].source_other
+---
+code: |
+  if defined('other_incomes[i].source') and other_incomes[i].source != "other":
+    other_incomes[i].display_name = other_incomes.terms_ordered.get(other_incomes[i].source, other_incomes[i].source)
+  elif defined('other_incomes[i].source') and other_incomes[i].source == "other" and defined('other_incomes[i].source_other'):
+    other_incomes[i].display_name = other_incomes[i].source_other
+  else:
+    other_incomes[i].display_name = other_incomes_other_display
+---
+id: want to add more other incomes
+question: Do you want to add any more incomes?
+subquestion: |
+  Tap Next if you don't have more to add.
+  
+  ${ other_incomes_table }
+  
+  ${ other_incomes.add_action() }
+  
+  **Other kinds of income could include:** Workers compensation, rental income, interest income, spousal maintenance (alimony), veteran's income, Social Security Disability, Social Security retirement, other retirement income or annuities.
+continue button field: other_incomes.review_items
+---
+continue button field: other_incomes.revisit
+question: |
+  Edit other incomes
+subquestion: |
+  ${ other_incomes_table }
+
+  ${ other_incomes.add_action() }
+---
+table: other_incomes_table
+rows: other_incomes
+columns:
+  - Source: |
+      row_item.display_name if defined("row_item.source") else ""
+  - Income per month: |
+      currency(row_item.total(times_per_year=12))
+edit:
+  - source
+  - value
+---
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    
 ---
 id: Employment income
 question: |
   Employment income
 fields:
-  - "Employment income monthly amount": users1_income_employment_monthly_amount
-    datatype: currency
-    min: 0
   - "Employment income for others in your household monthly amount": household_others_income_employment_monthly_amount
     datatype: currency
     min: 0
@@ -792,56 +1116,44 @@ fields:
     maxlength: 26
   - "Other household member's employer address": household_others_1_employed_employer_address
     maxlength: 40
-  - "Household others 2 employed name": household_others_2_employed_name
-    maxlength: 23
-  - "Household others 2 employed employer": household_others_2_employed_employer
-    maxlength: 26
-  - "Household others 2 employed employer address": household_others_2_employed_employer_address
-    maxlength: 40
-  - "Household others 3 employed name": household_others_3_employed_name
-    maxlength: 23
-  - "Household others 3 employed employer": household_others_3_employed_employer
-    maxlength: 26
-  - "Household others 3 employed employer address": household_others_3_employed_employer_address
-    maxlength: 40
 ---
-id: Other income
-question: |
-  Other income
-fields:
-  - "Investments income monthly amount": users1_income_investments_monthly_amount
-    datatype: currency
-    min: 0
-  - "Household others income investments monthly amount": household_others_income_investments_monthly_amount
-    datatype: currency
-    min: 0
-  - "Household others income unemployment monthly amount": household_others_income_unemployment_monthly_amount
-    datatype: currency
-    min: 0
-  - "Users1 income unemployment monthly amount": users1_income_unemployment_monthly_amount
-    datatype: currency
-    min: 0
-  - "Users1 income child support monthly amount": users1_income_child_support_monthly_amount
-    datatype: currency
-    min: 0
-  - "Household others income child support monthly amount": household_others_income_child_support_monthly_amount
-    datatype: currency
-    min: 0
-  - "Users1 income other monthly amount": users1_income_other_monthly_amount
-    datatype: currency
-    min: 0
-  - "Household others income other monthly amount": household_others_income_other_monthly_amount
-    datatype: currency
-    min: 0
-  - "Users1 income monthly total": users1_income_monthly_total
-    datatype: currency
-    min: 0
-  - "Household others income monthly total": household_others_income_monthly_total
-    datatype: currency
-    min: 0
-  - "Total income monthly total": total_income_monthly_total
-    datatype: currency
-    min: 0
+#id: Other income
+#question: |
+#  Other income
+#fields:
+#  - "Investments income monthly amount": users1_income_investments_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Household others income investments monthly amount": household_others_income_investments_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Household others income unemployment monthly amount": household_others_income_unemployment_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Users1 income unemployment monthly amount": users1_income_unemployment_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Users1 income child support monthly amount": users1_income_child_support_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Household others income child support monthly amount": household_others_income_child_support_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Users1 income other monthly amount": users1_income_other_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Household others income other monthly amount": household_others_income_other_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Users1 income monthly total": users1_income_monthly_total
+#    datatype: currency
+#    min: 0
+#  - "Household others income monthly total": household_others_income_monthly_total
+#    datatype: currency
+#    min: 0
+#  - "Total income monthly total": total_income_monthly_total
+#    datatype: currency
+#    min: 0
 ---
 id: different monthly income
 question: |
