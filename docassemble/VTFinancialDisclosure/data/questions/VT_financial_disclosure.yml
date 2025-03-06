@@ -1,0 +1,1358 @@
+---
+include:
+  - docassemble.AssemblyLine:assembly_line.yml
+  - docassemble.ALToolbox:phone-number-validation.yml
+  - docassemble.ALToolbox:al_income.yml
+  - docassemble.VTSharedYMLFile:VTSharedYMLFile.yml
+---
+modules:
+  - .al_income_move
+  - docassemble.demo.accordion
+---
+objects:
+  - users: ALPeopleList.using(ask_number=True,target_number=1)
+  - household_others: ALPeopleList.using(ask_number=True,target_number=1)
+  - jobs: ALItemizedJobList.using(complete_attribute="complete", ask_number=True)
+---
+objects:
+  - jobs[i].to_add: ALItemizedValueDict.using(complete_attribute="complete", there_are_any=True)
+---
+objects:
+  - all_courts: ALCourtLoader.using(file_name='docassemble.VTSharedYMLFile:data/sources/courts_list_full.xlsx')
+---
+code: |
+  trial_court_index = all_courts.matching_courts_in_county(county_name=user_selected_county,search_columns=['division_abbr'],search_string=trial_court_division)[0][0]
+---
+---
+metadata:
+  title: >-
+    Financial Disclosure - form 100-00127
+  short title: >-
+    Financial disclosure form
+  description: |-
+    This interview helps someone in Vermont complete a financial disclosure form for family court.
+  can_I_use_this_form: |
+    If you are a _____________, you can use this interview to ____________.
+  before_you_start: |
+    This interview will help you complete a financial disclosure form for family court.
+    
+    Before you get started, please gather:
+    
+    1. 
+    1. 
+    1. 
+    
+    When you are finished, you will need to:
+    
+    1. 
+    1.
+  maturity: production
+  estimated_completion_minutes: 30
+  estimated_completion_delta: 5
+  LIST_topics: 
+    - "CO-02-00-00-00"
+    - "FA-06-00-00-00"
+    - "GO-00-00-00-00"
+  tags:
+    - "CO-02-00-00-00"
+    - "FA-06-00-00-00"
+    - "GO-00-00-00-00"
+  authors:
+    - K. Surette, Legal Services Vermont
+  original_form: []
+  original_form_published_on: 2025-02-01
+  allowed_courts: []
+  typical_role: "unknown"
+  al_weaver_version: "1.11.0"
+  generated_on: "2025-03-05"
+  languages:
+    - en
+  jurisdiction: NAM-US-US+VT
+  review_date: 2025-03-05
+  form_titles:
+    - Financial Disclosure - form 100-00127
+  form_numbers:
+    - 100-00127
+  update_notes: |
+---
+code: |
+  # This controls the default country and list of states in address field questions
+  AL_DEFAULT_COUNTRY = "US"
+---
+code: |
+  # This controls the default state in address field questions
+  AL_DEFAULT_STATE = "VT"
+---
+code: |
+  github_repo_name =  'docassemble-FinancialDisclosureForm100001'
+---
+code: |
+  interview_short_title = "Complete a financial disclosure form for family court"
+---
+code: |
+  al_form_type = "existing_case" 
+---
+sections:
+  - review_financial_disclosure: Review your answers
+---
+#################### Interview order #####################
+comment: |
+  Controls order and branching logic for questions specific to this form
+id: interview_order_financial_disclosure
+code: |
+  # Set the allowed courts for this interview
+  allowed_courts = []
+  nav.set_section("review_financial_disclosure")
+  # Below sets the user_role and user_ask_role by asking a question.
+  # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant'
+  user_ask_role
+
+  Intro_screen
+  set_parts(subtitle=str(users))
+  users.gather()
+  users[0].birthdate
+  users[0].address.address
+  users[0].mailing_address.address
+  users[0].phone_number
+  users1_work_phone_number
+  users[0].email
+  set_progress(14)
+  
+  household_others_1_name
+
+  users1_receives_benefits
+  users1_benefits_monthly_amount
+  set_progress(28)
+  employed
+  users1_income_employment_monthly_amount
+  users1_income_investments_monthly_amount
+  users1_income_very_different_30_days_yes
+
+  expenses_intro
+  users1_expenses_rent_mortgage_monthly_amount
+  set_progress(56)
+  
+  assets_intro
+  users1_assets_cash_on_hand
+  set_progress(42)
+  users1_assets_vehicle_0_description
+  users1_assets_real_estate_0_description
+  users1_assets_other_0_description
+
+  trial_court_division
+  if trial_court_division == "Environmental":
+    user_selected_county = "Environmental"
+  if trial_court_division == "Judicial Bureau":
+    user_selected_county = "Judicial Bureau"
+  user_selected_county
+  trial_court.address.county
+
+  docket_number
+
+  signature_date
+  set_progress(70)
+
+  interview_order_financial_disclosure = True
+---
+###################### Main order ######################
+comment: |
+  This block includes the logic for standalone interviews.
+  Delete mandatory: True to include in another interview
+mandatory: True
+code: |
+  al_intro_screen
+  financial_disclosure_intro
+  interview_order_financial_disclosure
+  financial_disclosure_preview_question
+  signature_date
+  # Store anonymous data for analytics / statistics
+  store_variables_snapshot(
+      persistent=True,
+      data={
+          "zip": showifdef("users[0].address.zip"),
+          "reached_interview_end": True,
+      },
+  )
+  financial_disclosure_download
+---
+id: Financial_Disclosure
+continue button field: financial_disclosure_intro
+question: |
+  Financial Disclosure - form 100-00127
+subquestion: |
+  This interview will help you complete a financial disclosure form for family court.
+  
+  Before you get started, please gather:
+  
+  1. 
+  1. 
+  1. 
+  
+  When you are finished, you will need to:
+  
+  1. 
+  1.
+
+  If you are a _____________, you can use this interview to ____________.
+
+  Most people take about 30 minutes to complete this interview.
+---
+id: Intro screen
+question: |
+  Intro screen
+continue button field: Intro_screen
+---
+id: users birthdate
+question: |
+  When were you born?
+fields:
+  - Birthdate: users[0].birthdate
+    required: True
+    datatype: BirthDate
+---
+id: Phone number
+question: |
+  Phone number
+fields:
+  - "Your work phone or other phone number": users1_work_phone_number
+    maxlength: 26
+    required: False
+---
+id: Your household
+question: |
+  Your household
+fields:
+  - "How many people are in your household, including you?": household_size
+    datatype: integer
+    min: 0
+  - "Household other member 1 name": household_others_1_name
+    maxlength: 21
+  - "Household other member 2 name": household_others_2_name
+    maxlength: 20
+  - "Household other member 3 name": household_others_3_name
+    maxlength: 21
+  - "Household other member 4 name": household_others_4_name
+    maxlength: 20
+  - "Household other member 5 name": household_others_5_name
+    maxlength: 21
+  - "Household other member 6 name": household_others_6_name
+    maxlength: 20
+---
+id: Income from work
+question: |
+  Income from work
+fields:
+  - "Are you employed?": employed
+    datatype: yesno
+  - "Your employer's name": users1_employer_0_name
+    maxlength: 23
+  - "Your employer's address": users1_employer_0_address_one_line
+    maxlength: 40
+  - "Your employer's name": users1_employer_1
+    maxlength: 23
+  - "Your employer's address": users1_employer_1_address_one_line
+    maxlength: 40
+---
+id: Public assistance
+question: |
+  Public assistance
+fields:
+  - "Do you get public assistance?": users1_receives_benefits
+    datatype: yesno
+  - "Do others in your household get public assistance?": household_others_receive_benefits
+    datatype: yesno
+---
+id: Employment income
+question: |
+  Employment income
+fields:
+  - "Employment income monthly amount": users1_income_employment_monthly_amount
+    datatype: currency
+    min: 0
+  - "Employment income for others in your household monthly amount": household_others_income_employment_monthly_amount
+    datatype: currency
+    min: 0
+  - "Self-employment income monthly amount": users1_income_self_employment_monthly_amount
+    datatype: currency
+    min: 0
+  - "Self-employment income for others in your household monthly amount": household_others_income_self_employment_monthly_amount
+    datatype: currency
+    min: 0
+  - "Name of other household member who is employed": household_others_1_employed_name
+    maxlength: 23
+  - "Other household member's employer": household_others_1_employed_employer
+    maxlength: 26
+  - "Other household member's employer address": household_others_1_employed_employer_address
+    maxlength: 40
+  - "Household others 2 employed name": household_others_2_employed_name
+    maxlength: 23
+  - "Household others 2 employed employer": household_others_2_employed_employer
+    maxlength: 26
+  - "Household others 2 employed employer address": household_others_2_employed_employer_address
+    maxlength: 40
+  - "Household others 3 employed name": household_others_3_employed_name
+    maxlength: 23
+  - "Household others 3 employed employer": household_others_3_employed_employer
+    maxlength: 26
+  - "Household others 3 employed employer address": household_others_3_employed_employer_address
+    maxlength: 40
+---
+id: Other income
+question: |
+  Other income
+fields:
+  - "Investments income monthly amount": users1_income_investments_monthly_amount
+    datatype: currency
+    min: 0
+  - "Household others income investments monthly amount": household_others_income_investments_monthly_amount
+    datatype: currency
+    min: 0
+  - "Household others income unemployment monthly amount": household_others_income_unemployment_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 income unemployment monthly amount": users1_income_unemployment_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 income child support monthly amount": users1_income_child_support_monthly_amount
+    datatype: currency
+    min: 0
+  - "Household others income child support monthly amount": household_others_income_child_support_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 income other monthly amount": users1_income_other_monthly_amount
+    datatype: currency
+    min: 0
+  - "Household others income other monthly amount": household_others_income_other_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 income monthly total": users1_income_monthly_total
+    datatype: currency
+    min: 0
+  - "Household others income monthly total": household_others_income_monthly_total
+    datatype: currency
+    min: 0
+  - "Total income monthly total": total_income_monthly_total
+    datatype: currency
+    min: 0
+---
+id: different monthly income
+question: |
+  Your income in the last 30 days
+fields:
+  - "Is your income in the last 30 days significantly different from the past year?": users1_income_very_different_30_days_yes
+    datatype: yesnoradio
+  - "Your current monthly income": users1_income_very_different_30_days_amount
+    datatype: currency
+    min: 0
+    show if: users1_income_very_different_30_days_yes
+  - "Your current household monthly income": household_income_very_different_30_days_amount
+    datatype: currency
+    min: 0
+    show if: users1_income_very_different_30_days_yes
+  - "Why has your income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
+    input type: area
+    maxlength: 360
+    show if: users1_income_very_different_30_days_yes
+---
+id: Expenses intro
+question: |
+  Expenses
+subquestion: |
+  Now we'll review your expenses.
+continue button field: expenses_intro
+---
+id: Expenses
+question: |
+  Expenses
+fields:
+  - "Rent or mortgage monthly amount": users1_expenses_rent_mortgage_monthly_amount
+    datatype: currency
+    min: 0
+  - "Electric monthly amount": users1_expenses_electric_monthly_amount
+    datatype: currency
+    min: 0
+  - "Fuel monthly amount": users1_expenses_fuel_monthly_amount
+    datatype: currency
+    min: 0
+  - "Phone monthly amount": users1_expenses_phone_monthly_amount
+    datatype: currency
+    min: 0
+  - "Clothes monthly amount": users1_expenses_clothes_monthly_amount
+    datatype: currency
+    min: 0
+  - "Medical monthly amount": users1_expenses_medical_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses child support monthly amount": users1_expenses_child_support_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses auto loan monthly amount": users1_expenses_auto_loan_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses property tax monthly amount": users1_expenses_property_tax_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses all insurance monthly amount": users1_expenses_all_insurance_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses other 1 monthly amount": users1_expenses_other_1_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses other 2 monthly amount": users1_expenses_other_2_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses other 3 monthly amount": users1_expenses_other_3_monthly_amount
+    datatype: currency
+    min: 0
+  - "Users1 expenses monthly total": users1_expenses_monthly_total
+    datatype: currency
+    min: 0
+---
+id: Public assistance amounts
+question: |
+  Public assistance amounts
+fields:
+  - "Users1 benefits monthly amount": users1_benefits_monthly_amount
+    datatype: currency
+    min: 0
+  - "Household others benefits monthly amount": household_others_benefits_monthly_amount
+    datatype: currency
+    min: 0
+---
+id: Assets intro
+question: |
+  Assets
+subquestion: |
+  Now we'll review your assets -- things you own.
+continue button field: assets_intro
+---
+id: Bank accounts
+question: |
+  Bank accounts
+fields:
+  - "Users1 assets cash on hand": users1_assets_cash_on_hand
+    datatype: currency
+    min: 0
+  - "Users1 assets checking accounts": users1_assets_checking_accounts
+    datatype: currency
+    min: 0
+  - "Users1 assets savings accounts": users1_assets_savings_accounts
+    datatype: currency
+    min: 0
+---
+id: Cars trucks and other vehicles
+question: |
+  Cars, trucks and other vehicles
+fields:
+  - "Users1 assets vehicle 0 description": users1_assets_vehicle_0_description
+    maxlength: 17
+  - "Users1 assets vehicle 0 market value": users1_assets_vehicle_0_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 0 amount owed": users1_assets_vehicle_0_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 0 net value": users1_assets_vehicle_0_net_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 1 description": users1_assets_vehicle_1_description
+    maxlength: 30
+  - "Users1 assets vehicle 1 market value": users1_assets_vehicle_1_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 1 amount owed": users1_assets_vehicle_1_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 1 net value": users1_assets_vehicle_1_net_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 2 description": users1_assets_vehicle_2_description
+    maxlength: 30
+  - "Users1 assets vehicle 2 market value": users1_assets_vehicle_2_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 2 amount owed": users1_assets_vehicle_2_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 2 net value": users1_assets_vehicle_2_net_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 3 description": users1_assets_vehicle_3_description
+    maxlength: 30
+  - "Users1 assets vehicle 3 market value": users1_assets_vehicle_3_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 3 amount owed": users1_assets_vehicle_3_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 3 net value": users1_assets_vehicle_3_net_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 4 description": users1_assets_vehicle_4_description
+    maxlength: 30
+  - "Users1 assets vehicle 4 market value": users1_assets_vehicle_4_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 4 amount owed": users1_assets_vehicle_4_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets vehicle 4 net value": users1_assets_vehicle_4_net_value
+    datatype: currency
+    min: 0
+---
+id: Bank total
+question: |
+  Bank total
+fields:
+  - "Users1 assets cash total": users1_assets_cash_total
+    datatype: currency
+    min: 0
+---
+id: Real estate
+question: |
+  Real estate
+fields:
+  - "Users1 assets real estate 0 description": users1_assets_real_estate_0_description
+    maxlength: 16
+  - "Users1 assets real estate 0 market value": users1_assets_real_estate_0_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 0 amount owed": users1_assets_real_estate_0_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 0 net value": users1_assets_real_estate_0_net_value
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 1 description": users1_assets_real_estate_1_description
+    maxlength: 30
+  - "Users1 assets real estate 1 market value": users1_assets_real_estate_1_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 1 amount owed": users1_assets_real_estate_1_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 1 net value": users1_assets_real_estate_1_net_value
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 2 description": users1_assets_real_estate_2_description
+    maxlength: 30
+  - "Users1 assets real estate 2 market value": users1_assets_real_estate_2_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 2 amount owed": users1_assets_real_estate_2_amount_owed
+    datatype: currency
+    min: 0
+  - "Users1 assets real estate 2 net value": users1_assets_real_estate_2_net_value
+    datatype: currency
+    min: 0
+---
+id: Other assets
+question: |
+  Other assets
+fields:
+  - "Users1 assets other 0 description": users1_assets_other_0_description
+    maxlength: 30
+  - "Users1 assets other 0 market value": users1_assets_other_0_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets other 1 description": users1_assets_other_1_description
+    maxlength: 30
+  - "Users1 assets other 1 market value": users1_assets_other_1_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets other 2 description": users1_assets_other_2_description
+    maxlength: 30
+  - "Users1 assets other 2 market value": users1_assets_other_2_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets other 3 description": users1_assets_other_3_description
+    maxlength: 30
+  - "Users1 assets other 3 market value": users1_assets_other_3_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets other 4 description": users1_assets_other_4_description
+    maxlength: 30
+  - "Users1 assets other 4 market value": users1_assets_other_4_market_value
+    datatype: currency
+    min: 0
+  - "Users1 assets other 5 description": users1_assets_other_5_description
+    maxlength: 30
+  - "Users1 assets other 5 market value": users1_assets_other_5_market_value
+    datatype: currency
+    min: 0
+---
+id: choose a court division
+question: |
+  What court is your case in?
+fields:
+  - note: |
+      Choose the court division.
+      
+      If there's an existing court case, choose the court that the case is in. Look at the papers from the court.
+ 
+  - Court Division: trial_court_division
+    code: sorted(all_courts.unique_column_values('division_abbr'))
+  
+  - note: |
+      ${ collapse_template(types_of_cases_in_each_court_division) }
+
+      ${ collapse_template(ask_the_ARC) }
+---
+id: choose a court county
+question: |
+  What county is your case in?
+fields:
+  - note: |
+      Choose the county where you will file this form.
+
+  - County: user_selected_county
+    code: sorted(all_courts.unique_column_values('branch') - {"Environmental", "Judicial Bureau"} )
+  
+  - note: |
+      ${ collapse_template(which_county_to_choose) }
+      ${ collapse_template(in_which_county) }
+---
+id: These are not needed
+question: |
+  These are not needed
+fields:
+  - "Address": Address_3
+    maxlength: 38
+  - "Check box1421328": Check_Box1421328
+    datatype: yesno
+    required: False
+  - "Check box1411327": Check_Box1411327
+    datatype: yesno
+    required: False
+  - "Text6": Text6
+    maxlength: 22
+    required: False
+  - "Text17": Text17
+    maxlength: 5
+    required: False
+---
+id: preview financial_disclosure
+question: |
+  Preview your form before you sign it
+subquestion: |
+  Here is a preview of the form you will sign on the next page.   
+  
+  ${ al_court_bundle.as_pdf(key='preview') }
+
+  Click the image to open it in a new tab. Click the "Edit answers" button
+  to edit your answers.
+
+  ${ action_button_html(url_action('review_financial_disclosure'), label='Edit answers', color='info') }
+  
+  Remember to come back to this window to continue and sign your form.
+continue button field: financial_disclosure_preview_question    
+---
+code: |
+  signature_fields = ['users[0].signature']
+---
+code: |
+  # This is a placeholder for the addresses that will be searched
+  # for matching address to court. Edit if court venue is based on 
+  # a different address than the user's
+  [user.address.address for user in users.complete_elements()]
+  addresses_to_search = [user.address for user in users.complete_elements()]
+---
+id: financial disclosure form 100001 review screen
+event: review_financial_disclosure
+question: |
+  Review your answers
+review:
+  - Edit: trial_court_division
+    button: |
+      **Trial court**
+  
+      % if defined("trial_court_division"):
+      ${ trial_court_division } Division
+      
+      ${ trial_court.address.county } County
+      % endif
+  - Edit: docket_number
+    button: |
+      **Docket number**:
+      ${ docket_number }
+  - Edit: users.revisit
+    button: |
+      **Users**
+
+      % for item in users:
+        * ${ item }
+      % endfor
+  - Edit: household_others_1_name
+    button: |
+      **Household other member 1 name**:
+      ${ household_others_1_name }
+  - Edit: household_others_2_name
+    button: |
+      **Household other member 2 name**:
+      ${ household_others_2_name }
+  - Edit: Text17
+    button: |
+      **Text17**:
+      ${ Text17 }
+  - Edit: household_others_3_name
+    button: |
+      **Household other member 3 name**:
+      ${ household_others_3_name }
+  - Edit: household_others_4_name
+    button: |
+      **Household other member 4 name**:
+      ${ household_others_4_name }
+  - Edit: users1_work_phone_number
+    button: |
+      **Your work phone or other phone number**:
+      ${ users1_work_phone_number }
+  - Edit: household_others_5_name
+    button: |
+      **Household other member 5 name**:
+      ${ household_others_5_name }
+  - Edit: household_others_6_name
+    button: |
+      **Household other member 6 name**:
+      ${ household_others_6_name }
+  - Edit: users[0].birthdate
+    button: |
+      **Your birthdate:**:
+      ${ users[0].birthdate }
+
+  - Edit: household_size
+    button: |
+      **Size of your household**:
+      ${ household_size }
+  - Edit: employed
+    button: |
+      **Are you employed?**:
+      ${ word(yesno(employed)) }
+  - Edit: users1_employer_0_name
+    button: |
+      **Your employer's name**:
+      ${ users1_employer_0_name }
+  - Edit: users1_employer_0_address_one_line
+    button: |
+      **Your employer's address**:
+      ${ users1_employer_0_address_one_line }
+  - Edit: users1_employer_1
+    button: |
+      **Your employer's name**:
+      ${ users1_employer_1 }
+  - Edit: users1_employer_1_address_one_line
+    button: |
+      **Your employer's address**:
+      ${ users1_employer_1_address_one_line }
+  - Edit: users1_expenses_rent_mortgage_monthly_amount
+    button: |
+      **Rent or mortgage monthly amount**:
+      ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
+  - Edit: users1_receives_benefits
+    button: |
+      **Do you get public assistance?**:
+      ${ word(yesno(users1_receives_benefits)) }
+  - Edit: users1_expenses_electric_monthly_amount
+    button: |
+      **Electric monthly amount**:
+      ${ currency(users1_expenses_electric_monthly_amount) }
+  - Edit: household_others_receive_benefits
+    button: |
+      **Do others in your household get public assistance?**:
+      ${ word(yesno(household_others_receive_benefits)) }
+  - Edit: users1_expenses_fuel_monthly_amount
+    button: |
+      **Fuel monthly amount**:
+      ${ currency(users1_expenses_fuel_monthly_amount) }
+  - Edit: users1_expenses_phone_monthly_amount
+    button: |
+      **Phone monthly amount**:
+      ${ currency(users1_expenses_phone_monthly_amount) }
+  - Edit: users1_income_employment_monthly_amount
+    button: |
+      **Employment income monthly amount**:
+      ${ currency(users1_income_employment_monthly_amount) }
+  - Edit: household_others_income_employment_monthly_amount
+    button: |
+      **Employment income for others in your household monthly amount**:
+      ${ currency(household_others_income_employment_monthly_amount) }
+  - Edit: users1_expenses_clothes_monthly_amount
+    button: |
+      **Clothes monthly amount**:
+      ${ currency(users1_expenses_clothes_monthly_amount) }
+  - Edit: users1_income_self_employment_monthly_amount
+    button: |
+      **Self-employment income monthly amount**:
+      ${ currency(users1_income_self_employment_monthly_amount) }
+  - Edit: household_others_income_self_employment_monthly_amount
+    button: |
+      **Self-employment income for others in your household monthly amount**:
+      ${ currency(household_others_income_self_employment_monthly_amount) }
+  - Edit: users1_expenses_medical_monthly_amount
+    button: |
+      **Medical monthly amount**:
+      ${ currency(users1_expenses_medical_monthly_amount) }
+  - Edit: users1_income_investments_monthly_amount
+    button: |
+      **Investments income monthly amount**:
+      ${ currency(users1_income_investments_monthly_amount) }
+  - Edit: household_others_income_investments_monthly_amount
+    button: |
+      **Household others income investments monthly amount**:
+      ${ currency(household_others_income_investments_monthly_amount) }
+  - Edit: users1_expenses_child_support_monthly_amount
+    button: |
+      **Users1 expenses child support monthly amount**:
+      ${ currency(users1_expenses_child_support_monthly_amount) }
+  - Edit: household_others_income_unemployment_monthly_amount
+    button: |
+      **Household others income unemployment monthly amount**:
+      ${ currency(household_others_income_unemployment_monthly_amount) }
+  - Edit: users1_income_unemployment_monthly_amount
+    button: |
+      **Users1 income unemployment monthly amount**:
+      ${ currency(users1_income_unemployment_monthly_amount) }
+  - Edit: users1_expenses_auto_loan_monthly_amount
+    button: |
+      **Users1 expenses auto loan monthly amount**:
+      ${ currency(users1_expenses_auto_loan_monthly_amount) }
+  - Edit: users1_income_child_support_monthly_amount
+    button: |
+      **Users1 income child support monthly amount**:
+      ${ currency(users1_income_child_support_monthly_amount) }
+  - Edit: household_others_income_child_support_monthly_amount
+    button: |
+      **Household others income child support monthly amount**:
+      ${ currency(household_others_income_child_support_monthly_amount) }
+  - Edit: users1_expenses_property_tax_monthly_amount
+    button: |
+      **Users1 expenses property tax monthly amount**:
+      ${ currency(users1_expenses_property_tax_monthly_amount) }
+  - Edit: users1_benefits_monthly_amount
+    button: |
+      **Users1 benefits monthly amount**:
+      ${ currency(users1_benefits_monthly_amount) }
+  - Edit: household_others_benefits_monthly_amount
+    button: |
+      **Household others benefits monthly amount**:
+      ${ currency(household_others_benefits_monthly_amount) }
+  - Edit: users1_expenses_all_insurance_monthly_amount
+    button: |
+      **Users1 expenses all insurance monthly amount**:
+      ${ currency(users1_expenses_all_insurance_monthly_amount) }
+  - Edit: users1_income_other_monthly_amount
+    button: |
+      **Users1 income other monthly amount**:
+      ${ currency(users1_income_other_monthly_amount) }
+  - Edit: household_others_income_other_monthly_amount
+    button: |
+      **Household others income other monthly amount**:
+      ${ currency(household_others_income_other_monthly_amount) }
+  - Edit: users1_expenses_other_1_monthly_amount
+    button: |
+      **Users1 expenses other 1 monthly amount**:
+      ${ currency(users1_expenses_other_1_monthly_amount) }
+  - Edit: users1_income_monthly_total
+    button: |
+      **Users1 income monthly total**:
+      ${ currency(users1_income_monthly_total) }
+  - Edit: household_others_income_monthly_total
+    button: |
+      **Household others income monthly total**:
+      ${ currency(household_others_income_monthly_total) }
+  - Edit: users1_expenses_other_2_monthly_amount
+    button: |
+      **Users1 expenses other 2 monthly amount**:
+      ${ currency(users1_expenses_other_2_monthly_amount) }
+  - Edit: total_income_monthly_total
+    button: |
+      **Total income monthly total**:
+      ${ currency(total_income_monthly_total) }
+  - Edit: users1_expenses_other_3_monthly_amount
+    button: |
+      **Users1 expenses other 3 monthly amount**:
+      ${ currency(users1_expenses_other_3_monthly_amount) }
+  - Edit: users1_income_very_different_30_days_yes
+    button: |
+      **Has your income been significantly different than usual in the last 30 days?**:
+      ${ word(yesno(users1_income_very_different_30_days_yes)) }
+  - Edit: users1_expenses_monthly_total
+    button: |
+      **Users1 expenses monthly total**:
+      ${ currency(users1_expenses_monthly_total) }
+  - Edit: users1_assets_cash_on_hand
+    button: |
+      **Users1 assets cash on hand**:
+      ${ currency(users1_assets_cash_on_hand) }
+  - Edit: users1_assets_vehicle_0_description
+    button: |
+      **Users1 assets vehicle 0 description**:
+      ${ users1_assets_vehicle_0_description }
+  - Edit: users1_assets_real_estate_0_description
+    button: |
+      **Users1 assets real estate 0 description**:
+      ${ users1_assets_real_estate_0_description }
+  - Edit: users1_assets_checking_accounts
+    button: |
+      **Users1 assets checking accounts**:
+      ${ currency(users1_assets_checking_accounts) }
+  - Edit: users1_assets_real_estate_0_market_value
+    button: |
+      **Users1 assets real estate 0 market value**:
+      ${ currency(users1_assets_real_estate_0_market_value) }
+  - Edit: users1_assets_vehicle_0_market_value
+    button: |
+      **Users1 assets vehicle 0 market value**:
+      ${ currency(users1_assets_vehicle_0_market_value) }
+  - Edit: users1_assets_savings_accounts
+    button: |
+      **Users1 assets savings accounts**:
+      ${ currency(users1_assets_savings_accounts) }
+  - Edit: users1_assets_real_estate_0_amount_owed
+    button: |
+      **Users1 assets real estate 0 amount owed**:
+      ${ currency(users1_assets_real_estate_0_amount_owed) }
+  - Edit: users1_assets_vehicle_0_amount_owed
+    button: |
+      **Users1 assets vehicle 0 amount owed**:
+      ${ currency(users1_assets_vehicle_0_amount_owed) }
+  - Edit: users1_assets_cash_total
+    button: |
+      **Bank assets total**:
+      ${ currency(users1_assets_cash_on_hand + users1_assets_checking_accounts + users1_assets_savings_accounts) }
+  - Edit: users1_assets_real_estate_0_net_value
+    button: |
+      **Users1 assets real estate 0 net value**:
+      ${ currency(users1_assets_real_estate_0_net_value) }
+  - Edit: users1_assets_vehicle_0_net_value
+    button: |
+      **Users1 assets vehicle 0 net value**:
+      ${ currency(users1_assets_vehicle_0_net_value) }
+  - Edit: assets
+    button: |
+      **Do you have any assets?**:
+      ${ word(yesno(assets)) }
+  - Edit: users1_assets_vehicle_1_description
+    button: |
+      **Users1 assets vehicle 1 description**:
+      ${ users1_assets_vehicle_1_description }
+  - Edit: users1_assets_vehicle_1_market_value
+    button: |
+      **Users1 assets vehicle 1 market value**:
+      ${ currency(users1_assets_vehicle_1_market_value) }
+  - Edit: users1_assets_vehicle_1_amount_owed
+    button: |
+      **Users1 assets vehicle 1 amount owed**:
+      ${ currency(users1_assets_vehicle_1_amount_owed) }
+  - Edit: users1_assets_vehicle_1_net_value
+    button: |
+      **Users1 assets vehicle 1 net value**:
+      ${ currency(users1_assets_vehicle_1_net_value) }
+  - Edit: users1_assets_vehicle_2_description
+    button: |
+      **Users1 assets vehicle 2 description**:
+      ${ users1_assets_vehicle_2_description }
+  - Edit: users1_assets_vehicle_2_market_value
+    button: |
+      **Users1 assets vehicle 2 market value**:
+      ${ currency(users1_assets_vehicle_2_market_value) }
+  - Edit: users1_assets_vehicle_2_amount_owed
+    button: |
+      **Users1 assets vehicle 2 amount owed**:
+      ${ currency(users1_assets_vehicle_2_amount_owed) }
+  - Edit: users1_assets_vehicle_2_net_value
+    button: |
+      **Users1 assets vehicle 2 net value**:
+      ${ currency(users1_assets_vehicle_2_net_value) }
+  - Edit: users1_assets_vehicle_3_description
+    button: |
+      **Users1 assets vehicle 3 description**:
+      ${ users1_assets_vehicle_3_description }
+  - Edit: users1_assets_vehicle_3_market_value
+    button: |
+      **Users1 assets vehicle 3 market value**:
+      ${ currency(users1_assets_vehicle_3_market_value) }
+  - Edit: users1_assets_vehicle_3_amount_owed
+    button: |
+      **Users1 assets vehicle 3 amount owed**:
+      ${ currency(users1_assets_vehicle_3_amount_owed) }
+  - Edit: users1_assets_vehicle_3_net_value
+    button: |
+      **Users1 assets vehicle 3 net value**:
+      ${ currency(users1_assets_vehicle_3_net_value) }
+  - Edit: users1_assets_vehicle_4_description
+    button: |
+      **Users1 assets vehicle 4 description**:
+      ${ users1_assets_vehicle_4_description }
+  - Edit: users1_assets_vehicle_4_market_value
+    button: |
+      **Users1 assets vehicle 4 market value**:
+      ${ currency(users1_assets_vehicle_4_market_value) }
+  - Edit: users1_assets_vehicle_4_amount_owed
+    button: |
+      **Users1 assets vehicle 4 amount owed**:
+      ${ currency(users1_assets_vehicle_4_amount_owed) }
+  - Edit: users1_assets_vehicle_4_net_value
+    button: |
+      **Users1 assets vehicle 4 net value**:
+      ${ currency(users1_assets_vehicle_4_net_value) }
+  - Edit: users1_assets_real_estate_1_description
+    button: |
+      **Users1 assets real estate 1 description**:
+      ${ users1_assets_real_estate_1_description }
+  - Edit: users1_assets_real_estate_1_market_value
+    button: |
+      **Users1 assets real estate 1 market value**:
+      ${ currency(users1_assets_real_estate_1_market_value) }
+  - Edit: users1_assets_real_estate_1_amount_owed
+    button: |
+      **Users1 assets real estate 1 amount owed**:
+      ${ currency(users1_assets_real_estate_1_amount_owed) }
+  - Edit: users1_assets_real_estate_1_net_value
+    button: |
+      **Users1 assets real estate 1 net value**:
+      ${ currency(users1_assets_real_estate_1_net_value) }
+  - Edit: users1_assets_real_estate_2_description
+    button: |
+      **Users1 assets real estate 2 description**:
+      ${ users1_assets_real_estate_2_description }
+  - Edit: users1_assets_real_estate_2_market_value
+    button: |
+      **Users1 assets real estate 2 market value**:
+      ${ currency(users1_assets_real_estate_2_market_value) }
+  - Edit: users1_assets_real_estate_2_amount_owed
+    button: |
+      **Users1 assets real estate 2 amount owed**:
+      ${ currency(users1_assets_real_estate_2_amount_owed) }
+  - Edit: users1_assets_real_estate_2_net_value
+    button: |
+      **Users1 assets real estate 2 net value**:
+      ${ currency(users1_assets_real_estate_2_net_value) }
+  - Edit: users1_assets_other_0_description
+    button: |
+      **Users1 assets other 0 description**:
+      ${ users1_assets_other_0_description }
+  - Edit: users1_assets_other_0_market_value
+    button: |
+      **Users1 assets other 0 market value**:
+      ${ currency(users1_assets_other_0_market_value) }
+  - Edit: users1_assets_other_1_description
+    button: |
+      **Users1 assets other 1 description**:
+      ${ users1_assets_other_1_description }
+  - Edit: users1_assets_other_1_market_value
+    button: |
+      **Users1 assets other 1 market value**:
+      ${ currency(users1_assets_other_1_market_value) }
+  - Edit: users1_assets_other_2_description
+    button: |
+      **Users1 assets other 2 description**:
+      ${ users1_assets_other_2_description }
+  - Edit: users1_assets_other_2_market_value
+    button: |
+      **Users1 assets other 2 market value**:
+      ${ currency(users1_assets_other_2_market_value) }
+  - Edit: users1_assets_other_3_description
+    button: |
+      **Users1 assets other 3 description**:
+      ${ users1_assets_other_3_description }
+  - Edit: users1_assets_other_3_market_value
+    button: |
+      **Users1 assets other 3 market value**:
+      ${ currency(users1_assets_other_3_market_value) }
+  - Edit: users1_assets_other_4_description
+    button: |
+      **Users1 assets other 4 description**:
+      ${ users1_assets_other_4_description }
+  - Edit: users1_assets_other_4_market_value
+    button: |
+      **Users1 assets other 4 market value**:
+      ${ currency(users1_assets_other_4_market_value) }
+  - Edit: users1_assets_other_5_description
+    button: |
+      **Users1 assets other 5 description**:
+      ${ users1_assets_other_5_description }
+  - Edit: users1_assets_other_5_market_value
+    button: |
+      **Users1 assets other 5 market value**:
+      ${ currency(users1_assets_other_5_market_value) }
+  - Edit: household_others_1_employed_name
+    button: |
+      **Name of other household member who is employed**:
+      ${ household_others_1_employed_name }
+  - Edit: household_others_1_employed_employer
+    button: |
+      **Other household member's employer**:
+      ${ household_others_1_employed_employer }
+  - Edit: household_others_1_employed_employer_address
+    button: |
+      **Other household member's employer address**:
+      ${ household_others_1_employed_employer_address }
+  - Edit: household_others_2_employed_name
+    button: |
+      **Household others 2 employed name**:
+      ${ household_others_2_employed_name }
+  - Edit: household_others_2_employed_employer
+    button: |
+      **Household others 2 employed employer**:
+      ${ household_others_2_employed_employer }
+  - Edit: household_others_2_employed_employer_address
+    button: |
+      **Household others 2 employed employer address**:
+      ${ household_others_2_employed_employer_address }
+  - Edit: household_others_3_employed_name
+    button: |
+      **Household others 3 employed name**:
+      ${ household_others_3_employed_name }
+  - Edit: household_others_3_employed_employer
+    button: |
+      **Household others 3 employed employer**:
+      ${ household_others_3_employed_employer }
+  - Edit: household_others_3_employed_employer_address
+    button: |
+      **Household others 3 employed employer address**:
+      ${ household_others_3_employed_employer_address }
+  - Edit: users1_income_very_different_30_days_amount
+    button: |
+      **Users1 income very different 30 days amount**:
+      ${ currency(users1_income_very_different_30_days_amount) }
+  - Edit: household_income_very_different_30_days_amount
+    button: |
+      **Household income very different 30 days amount**:
+      ${ currency(household_income_very_different_30_days_amount) }
+  - Edit: users1_income_very_different_30_days_why
+    button: |
+      **Why has your income been significantly different than usual in the last 30 days?**:
+      > ${ single_paragraph(users1_income_very_different_30_days_why) }
+  - Edit: signature_date
+    button: |
+      **Date of signature**:
+      ${ signature_date }
+  - Edit: Address_3
+    button: |
+      **Address**:
+      ${ Address_3 }
+---
+continue button field: users.revisit
+question: |
+  Edit users
+subquestion: |
+  ${ users.table }
+
+  ${ users.add_action() }
+---
+table: users.table
+rows: users
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+  - Address: |
+      row_item.address.block() if defined("row_item.address.address") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+  - Signature: |
+      row_item.signature if defined("row_item.signature") else ""
+  - Mailing address: |
+      row_item.mailing_address.block() if defined("row_item.mailing_address.address") else ""
+  - Email: |
+      row_item.email if defined("row_item.email") else ""
+edit:
+  - name.first
+  - address.address
+  - phone_number
+  - signature
+  - mailing_address.address
+  - email
+confirm: True
+
+---
+id: download financial_disclosure
+event: financial_disclosure_download
+question: |
+  All done
+subquestion: |
+  Thank you ${users}. Your form is ready to download and deliver.
+  
+  View, download and send your form below. Click the "Edit answers" button to fix any mistakes.
+
+  ${ action_button_html(url_action('review_financial_disclosure'), label='Edit answers', color='info') }
+  
+  
+  ${ al_user_bundle.download_list_html() }
+  
+
+  ${ al_user_bundle.send_button_html(show_editable_checkbox=False) }
+
+progress: 100
+---
+# ALDocument objects specify the metadata for each template
+objects:
+  - financial_disclosure_Post_interview_instructions: ALDocument.using(title="Instructions", filename="financial_disclosure_next_steps.docx", enabled=True, has_addendum=False)
+  - financial_disclosure_attachment: ALDocument.using(title="Financial Disclosure - form 100-00127", filename="financial_disclosure", enabled=True, has_addendum=False, )
+---
+# Bundles group the ALDocuments into separate downloads, such as for court and for the user
+objects:
+  - al_user_bundle: ALDocumentBundle.using(elements=[financial_disclosure_Post_interview_instructions, financial_disclosure_attachment], filename="financial_disclosure", title="All forms to download for your records", enabled=True)
+  - al_court_bundle: ALDocumentBundle.using(elements=[financial_disclosure_attachment],  filename="financial_disclosure", title="All forms to deliver to court", enabled=True)
+---
+# Each attachment defines a key in an ALDocument. We use `i` as the placeholder here so the same template is 
+# used for "preview" and "final" keys, and logic in the template checks the value of 
+# `i` to show or hide the user's signature
+attachment:
+  name: Post-interview-Instructions
+  filename: financial_disclosure_next_steps
+  docx template file: financial_disclosure_next_steps.docx
+  variable name: financial_disclosure_Post_interview_instructions[i]
+  skip undefined: True
+  tagged pdf: True
+---
+attachment:
+  name: financial disclosure  form 100001
+  filename: financial_disclosure
+  variable name: financial_disclosure_attachment[i]
+  skip undefined: True
+  pdf template file: financial_disclosure.pdf
+  fields:
+      - "court_division": ${ trial_court_division }
+      - "trial_court_county":  |
+          % if trial_court_division == "Environmental":
+
+          % elif trial_court_division == "Judicial Bureau":
+            
+          % else:
+          ${ trial_court.address.county }
+          % endif
+      - "docket_number": ${ docket_number }
+      - "users1_name_full": ${ users[0] }
+      - "users1_name_full__1": ${ users[0] }
+      - "users1_address_line_one": ${ users[0].address.line_one() }
+      - "users1_address_line_two": ${ users[0].address.line_two() }
+      - "household_others_1_name": ${ household_others_1_name }
+      - "household_others_2_name": ${ household_others_2_name }
+      - "users1_phone_number": ${ users[0].phone_number }
+      - "users1_phone_number__1": ${ users[0].phone_number }
+      - "household_others_3_name": ${ household_others_3_name }
+      - "household_others_4_name": ${ household_others_4_name }
+      - "users1_work_phone_number": ${ users1_work_phone_number }
+      - "users1_work_phone_number__1": ${ users1_work_phone_number }
+      - "household_others_5_name": ${ household_others_5_name }
+      - "household_others_6_name": ${ household_others_6_name }
+      - "users1_birth_month": ${ format_date(users[0].birthdate, format='M') }
+      - "users1_birth_day": ${ format_date(users[0].birthdate, format='dd') }
+      - "users1_birth_year": ${ format_date(users[0].birthdate, format='yyyy') }
+      - "household_size": ${ household_size }
+      - "employed_yes": ${ employed }
+      - "employed_no": ${ not employed }
+      - "users1_employer_0_name": ${ users1_employer_0_name }
+      - "users1_employer_0_address_one_line": ${ users1_employer_0_address_one_line }
+      - "users1_employer_1": ${ users1_employer_1 }
+      - "users1_employer_1_address_one_line": ${ users1_employer_1_address_one_line }
+      - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
+      - "users1_receives_benefits_yes": ${ users1_receives_benefits }
+      - "users1_receives_benefits_no": ${ not users1_receives_benefits }
+      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
+      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
+      - "household_others_receive_benefits_yes": ${ household_others_receive_benefits }
+      - "household_others_receive_benefits_no": ${ not household_others_receive_benefits }
+      - "users1_expenses_fuel_monthly_amount": ${ currency(users1_expenses_fuel_monthly_amount) }
+      - "users1_expenses_phone_monthly_amount": ${ currency(users1_expenses_phone_monthly_amount) }
+      - "users1_income_employment_monthly_amount": ${ currency(users1_income_employment_monthly_amount) }
+      - "household_others_income_employment_monthly_amount": ${ currency(household_others_income_employment_monthly_amount) }
+      - "users1_expenses_clothes_monthly_amount": ${ currency(users1_expenses_clothes_monthly_amount) }
+      - "users1_income_self_employment_monthly_amount": ${ currency(users1_income_self_employment_monthly_amount) }
+      - "household_others_income_self_employment_monthly_amount": ${ currency(household_others_income_self_employment_monthly_amount) }
+      - "users1_expenses_medical_monthly_amount": ${ currency(users1_expenses_medical_monthly_amount) }
+      - "users1_income_investments_monthly_amount": ${ currency(users1_income_investments_monthly_amount) }
+      - "household_others_income_investments_monthly_amount": ${ currency(household_others_income_investments_monthly_amount) }
+      - "users1_expenses_child_support_monthly_amount": ${ currency(users1_expenses_child_support_monthly_amount) }
+      - "household_others_income_unemployment_monthly_amount": ${ currency(household_others_income_unemployment_monthly_amount) }
+      - "users1_income_unemployment_monthly_amount": ${ currency(users1_income_unemployment_monthly_amount) }
+      - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
+      - "users1_income_child_support_monthly_amount": ${ currency(users1_income_child_support_monthly_amount) }
+      - "household_others_income_child_support_monthly_amount": ${ currency(household_others_income_child_support_monthly_amount) }
+      - "users1_expenses_property_tax_monthly_amount": ${ currency(users1_expenses_property_tax_monthly_amount) }
+      - "users1_benefits_monthly_amount": ${ currency(users1_benefits_monthly_amount) }
+      - "household_others_benefits_monthly_amount": ${ currency(household_others_benefits_monthly_amount) }
+      - "users1_expenses_all_insurance_monthly_amount": ${ currency(users1_expenses_all_insurance_monthly_amount) }
+      - "users1_income_other_monthly_amount": ${ currency(users1_income_other_monthly_amount) }
+      - "household_others_income_other_monthly_amount": ${ currency(household_others_income_other_monthly_amount) }
+      - "users1_expenses_other_1_monthly_amount": ${ currency(users1_expenses_other_1_monthly_amount) }
+      - "users1_income_monthly_total": ${ currency(users1_income_monthly_total) }
+      - "household_others_income_monthly_total": ${ currency(household_others_income_monthly_total) }
+      - "users1_expenses_other_2_monthly_amount": ${ currency(users1_expenses_other_2_monthly_amount) }
+      - "total_income_monthly_total": ${ currency(total_income_monthly_total) }
+      - "users1_expenses_other_3_monthly_amount": ${ currency(users1_expenses_other_3_monthly_amount) }
+      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days_yes }
+      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days_yes }
+      - "users1_expenses_monthly_total": ${ currency(users1_expenses_monthly_total) }
+      - "users1_assets_vehicle_0_description": ${ users1_assets_vehicle_0_description }
+      - "users1_assets_real_estate_0_description": ${ users1_assets_real_estate_0_description }
+      - "users1_assets_real_estate_0_market_value": ${ currency(users1_assets_real_estate_0_market_value) }
+      - "users1_assets_vehicle_0_market_value": ${ currency(users1_assets_vehicle_0_market_value) }
+      - "users1_assets_real_estate_0_amount_owed": ${ currency(users1_assets_real_estate_0_amount_owed) }
+      - "users1_assets_vehicle_0_amount_owed": ${ currency(users1_assets_vehicle_0_amount_owed) }
+      - "users1_assets_cash_on_hand": ${ currency(users1_assets_cash_on_hand) }
+      - "users1_assets_checking_accounts": ${ currency(users1_assets_checking_accounts) }
+      - "users1_assets_savings_accounts": ${ currency(users1_assets_savings_accounts) }
+      - "users1_assets_cash_total": |
+          ${ currency(users1_assets_cash_on_hand + users1_assets_checking_accounts + users1_assets_savings_accounts) }
+      - "users1_assets_real_estate_0_net_value": ${ currency(users1_assets_real_estate_0_net_value) }
+      - "users1_assets_vehicle_0_net_value": ${ currency(users1_assets_vehicle_0_net_value) }
+      - "assets_yes": ${ assets }
+      - "assets_no": ${ not assets }
+      - "users1_assets_vehicle_1_description": ${ users1_assets_vehicle_1_description }
+      - "users1_assets_vehicle_1_market_value": ${ currency(users1_assets_vehicle_1_market_value) }
+      - "users1_assets_vehicle_1_amount_owed": ${ currency(users1_assets_vehicle_1_amount_owed) }
+      - "users1_assets_vehicle_1_net_value": ${ currency(users1_assets_vehicle_1_net_value) }
+      - "users1_assets_vehicle_2_description": ${ users1_assets_vehicle_2_description }
+      - "users1_assets_vehicle_2_market_value": ${ currency(users1_assets_vehicle_2_market_value) }
+      - "users1_assets_vehicle_2_amount_owed": ${ currency(users1_assets_vehicle_2_amount_owed) }
+      - "users1_assets_vehicle_2_net_value": ${ currency(users1_assets_vehicle_2_net_value) }
+      - "users1_assets_vehicle_3_description": ${ users1_assets_vehicle_3_description }
+      - "users1_assets_vehicle_3_market_value": ${ currency(users1_assets_vehicle_3_market_value) }
+      - "users1_assets_vehicle_3_amount_owed": ${ currency(users1_assets_vehicle_3_amount_owed) }
+      - "users1_assets_vehicle_3_net_value": ${ currency(users1_assets_vehicle_3_net_value) }
+      - "users1_assets_vehicle_4_description": ${ users1_assets_vehicle_4_description }
+      - "users1_assets_vehicle_4_market_value": ${ currency(users1_assets_vehicle_4_market_value) }
+      - "users1_assets_vehicle_4_amount_owed": ${ currency(users1_assets_vehicle_4_amount_owed) }
+      - "users1_assets_vehicle_4_net_value": ${ currency(users1_assets_vehicle_4_net_value) }
+      - "users1_assets_real_estate_1_description": ${ users1_assets_real_estate_1_description }
+      - "users1_assets_real_estate_1_market_value": ${ currency(users1_assets_real_estate_1_market_value) }
+      - "users1_assets_real_estate_1_amount_owed": ${ currency(users1_assets_real_estate_1_amount_owed) }
+      - "users1_assets_real_estate_1_net_value": ${ currency(users1_assets_real_estate_1_net_value) }
+      - "users1_assets_real_estate_2_description": ${ users1_assets_real_estate_2_description }
+      - "users1_assets_real_estate_2_market_value": ${ currency(users1_assets_real_estate_2_market_value) }
+      - "users1_assets_real_estate_2_amount_owed": ${ currency(users1_assets_real_estate_2_amount_owed) }
+      - "users1_assets_real_estate_2_net_value": ${ currency(users1_assets_real_estate_2_net_value) }
+      - "users1_assets_other_0_description": ${ users1_assets_other_0_description }
+      - "users1_assets_other_0_market_value": ${ currency(users1_assets_other_0_market_value) }
+      - "users1_assets_other_1_description": ${ users1_assets_other_1_description }
+      - "users1_assets_other_1_market_value": ${ currency(users1_assets_other_1_market_value) }
+      - "users1_assets_other_2_description": ${ users1_assets_other_2_description }
+      - "users1_assets_other_2_market_value": ${ currency(users1_assets_other_2_market_value) }
+      - "users1_assets_other_3_description": ${ users1_assets_other_3_description }
+      - "users1_assets_other_3_market_value": ${ currency(users1_assets_other_3_market_value) }
+      - "users1_assets_other_4_description": ${ users1_assets_other_4_description }
+      - "users1_assets_other_4_market_value": ${ currency(users1_assets_other_4_market_value) }
+      - "users1_assets_other_5_description": ${ users1_assets_other_5_description }
+      - "users1_assets_other_5_market_value": ${ currency(users1_assets_other_5_market_value) }
+      - "household_others_1_employed_name": ${ household_others_1_employed_name }
+      - "household_others_1_employed_employer": ${ household_others_1_employed_employer }
+      - "household_others_1_employed_employer_address": ${ household_others_1_employed_employer_address }
+      - "household_others_2_employed_name": ${ household_others_2_employed_name }
+      - "household_others_2_employed_employer": ${ household_others_2_employed_employer }
+      - "household_others_2_employed_employer_address": ${ household_others_2_employed_employer_address }
+      - "household_others_3_employed_name": ${ household_others_3_employed_name }
+      - "household_others_3_employed_employer": ${ household_others_3_employed_employer }
+      - "household_others_3_employed_employer_address": ${ household_others_3_employed_employer_address }
+      - "users1_income_very_different_30_days_amount": ${ currency(users1_income_very_different_30_days_amount) }
+      - "household_income_very_different_30_days_amount": ${ currency(household_income_very_different_30_days_amount) }
+      - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
+      - "users1_signature": ${ users[0].signature_if_final(i) }
+      - "signature_date": ${ signature_date }
+      - "users1_mailing_address_line_one": ${ users[0].mailing_address.line_one() }
+      - "users1_mailing_address_line_two": ${ users[0].mailing_address.line_two() }
+      - "Address 3": ${ Address_3 }
+      - "users1_email__1": ${ users[0].email }
+
+
+
