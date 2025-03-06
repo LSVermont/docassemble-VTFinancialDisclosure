@@ -92,8 +92,74 @@ code: |
 code: |
   al_form_type = "existing_case" 
 ---
+############Code below to allow Edit my answers to be clicked in Menu or in side nav#########
+---
+reconsider: True
+code: |
+  al_menu_items_tmp = [
+    {"url": url_ask(['al_start_over_confirmation','al_start_over']),
+    "label": "Start over"
+    },
+    {
+      "url": url_ask(['al_exit_logout_confirmation', 'al_exit_logout']),
+      "label": "Exit and delete my answers"
+    },
+  ]
+  if al_enable_incomplete_downloads:
+    al_menu_items_tmp.append({
+        "url": url_action('al_error_action_download_screen'), 
+        "label": "Download current progress"
+    })
+  
+  # Answer set feature is behind a server-wide configuration option
+  if get_config('assembly line',{}).get('enable answer sets'):
+    al_menu_items_tmp.extend([
+    {"url": url_ask(["al_sessions_snapshot_label", {"recompute": ["al_sessions_save_session_snapshot"]}, "al_sessions_save_status"]),
+    "label": "Save answer set"
+    },
+    action_menu_item("Load answer set", "al_load_saved_session"),
+  ]
+  )
+  
+  if get_config('assembly line',{}).get('enable answer set imports'):
+    al_menu_items_tmp.append(
+      {"url": url_ask(["al_sessions_json_file", {"recompute": ["al_sessions_import_json"]}, "al_sessions_load_status"]),
+      "label": "Import answer set"
+      }
+    )
+  al_menu_items_tmp.append(
+    {
+      "url": url_action('edit_answers_screen'),
+      "label": "Edit my answers"
+      
+    }
+  )
+    
+  al_menu_items = al_menu_items_tmp
+  del al_menu_items_tmp
+---
+event: edit_answers_screen
+id: edit answers screen
+question: |
+  Edit your answers
+subquestion: |
+  ${ action_button_html(url_action('review_financial_disclosure'), label='<i class="fa-solid fa-pencil"></i> Edit your answers', color='info') }
+  
+  Remember to come back to this screen to continue.
+continue button field: financial_disclosure_preview_question
+---
 sections:
-  - review_financial_disclosure: Review your answers
+  - intro: Is this tool right for you
+  - about_you: You and your household
+  - case_info: Your court case
+  - your_income: Your income
+  - your_expenses: Your expenses
+  - your_assets: Your property and assets
+  - reasons: Other info
+  - review_financial_disclosure: <i class="fa-solid fa-pencil"></i> <u>Edit your answers</u>
+  - sign: Sign your document
+  - get_docs: Download your document
+progressive: False
 ---
 #################### Interview order #####################
 comment: |
@@ -102,21 +168,24 @@ id: interview_order_financial_disclosure
 code: |
   # Set the allowed courts for this interview
   allowed_courts = []
-  nav.set_section("review_financial_disclosure")
+
+  Intro_screen
   # Below sets the user_role and user_ask_role by asking a question.
   # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant'
   user_ask_role
-
-  Intro_screen
   set_parts(subtitle=str(users))
   users.gather()
   users[0].birthdate
   users[0].address.address
-  users[0].mailing_address.address
   users[0].phone_number
-  users1_work_phone_number
   users[0].email
   set_progress(14)
+
+  jobs.gather()
+  if len(jobs) > 0:
+    review_jobs
+  set_progress(45)
+    
   
   household_others_1_name
 
@@ -163,6 +232,7 @@ code: |
   al_intro_screen
   financial_disclosure_intro
   interview_order_financial_disclosure
+  nav.set_section("review_financial_disclosure")
   financial_disclosure_preview_question
   signature_date
   # Store anonymous data for analytics / statistics
@@ -238,20 +308,458 @@ fields:
   - "Household other member 6 name": household_others_6_name
     maxlength: 20
 ---
-id: Income from work
+################################# JOBS ##############################
+---
+id: work
 question: |
-  Income from work
+  Work
 fields:
-  - "Are you employed?": employed
+  - "Do you get income from working?": employed
+    datatype: yesnoradio
+---
+code: |
+  if not employed:
+    jobs.target_number = 0
+---
+if: j in ["self employed"]
+id: self employed income
+question: |
+  What do you make in self-employed income each month as a ${ jobs[i].source }?
+subquestion: |
+  
+  Most people report their net income from self-employment. To figure your monthly net income:
+  
+  - Look at your gross income over the last 12 months of self-employment. 
+  - Subtract your business expenses over that time.
+  - Then divide by 12.
+  
+  Or you can:
+  
+  - Look at your most recent IRS Schedule C form from your federal taxes.
+  - Divide the net income by 12.
+fields:
+  - Your monthly net income: jobs[i].to_add[j].value
+    datatype: currency
+---
+if: j in ["self employed"]
+code: |
+  jobs[i].to_add[j].times_per_year = 12
+---
+if: jobs[i].is_self_employed
+code: |
+  jobs[i].times_per_year = 12
+---
+generic object: ALItemizedJob
+code: |
+  x.source
+  x.wages_added
+  x.to_add.gather()
+  if x.is_self_employed:
+    x.times_per_year
+    # for fee waiver form we are not collecting items to subtract from wages
+    # x.to_subtract.gather()
+  else:
+    if not x.is_self_employed:
+      x.employer.name.first    
+  x.complete = True
+---
+generic object: ALItemizedValueDict
+code: |
+  x.times_per_year
+  x.complete = True
+---
+sets:
+  - x.employer.name.first
+id: employer
+generic object: ALItemizedJob
+question: |
+  Tell us who employs you as a ${ x.source }
+fields:
+  - I am self-employed: x.is_self_employed
     datatype: yesno
-  - "Your employer's name": users1_employer_0_name
-    maxlength: 23
-  - "Your employer's address": users1_employer_0_address_one_line
-    maxlength: 40
-  - "Your employer's name": users1_employer_1
-    maxlength: 23
-  - "Your employer's address": users1_employer_1_address_one_line
-    maxlength: 40
+  - Is this a part time job?: x.is_part_time
+    datatype: yesnoradio
+  - Employer's name: x.employer.name.first
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - note: |
+      ---
+
+      Employer's contact information
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Street address: x.employer.address.address
+    address autocomplete: True
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Unit: x.employer.address.unit
+    required: False
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - City: x.employer.address.city
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - State: x.employer.address.state
+    code: |
+      states_list()
+    default: VT
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Zip or postal code: x.employer.address.zip
+    show if:
+      variable: x.is_self_employed
+      is: False
+---
+generic object: ALItemizedJob
+code: |
+  if x.is_self_employed:
+    x.to_add.there_are_any = True
+    x.to_add.new_item_name = "self employed"
+    x.to_add.there_is_another = False
+  elif x.is_part_time:
+    x.to_add.there_are_any = True
+    x.to_add.new_item_name = "part time"
+  else:
+    x.to_add.there_are_any = True
+    x.to_add.new_item_name = "full time"
+  x.wages_added = True
+---
+id: other itemized job income value
+generic object: ALItemizedJob
+question: |
+  Edit your ${ job_items_names.get(i, i) } in your job as a ${ x.source }
+fields:
+  - Amount: x.to_add[i].value
+    datatype: currency
+    hide if:
+      code: x.is_hourly is True
+  - Your hourly pay rate: x.to_add[i].value
+    datatype: currency
+    show if:
+      code: x.is_hourly is True
+        
+  - How often do you get paid this amount?: x.to_add[i].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
+    hide if:
+      code: x.is_hourly is True
+  - How often do you get paid?: x.to_add[i].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
+    show if:
+      code: x.is_hourly is True
+  #- Do you have other additional income from this job? (Examples -- Tips, commissions, bonuses): x.to_add.there_is_another
+    #datatype: yesnoradio
+---
+if: j in ["full time","part time"]
+id: itemized job period pt and ft wages
+generic object: ALItemizedJob
+question: |
+  Details about ${ j } compensation for your ${ jobs[i].source } job
+fields:
+  - Paid hourly or salary?: jobs[i].to_add[j].is_hourly
+    input type: radio
+    choices:
+      - Hourly: True
+      - Salary: False
+  - label: |
+      What is your hourly pay for this job?
+    field: jobs[i].to_add[j].value
+    datatype: currency
+    show if: 
+      variable: jobs[i].to_add[j].is_hourly
+      is: True
+  - label: |
+      What do you get for wages during each pay period?
+    field: jobs[i].to_add[j].value
+    datatype: currency
+    show if: 
+      variable: jobs[i].to_add[j].is_hourly
+      is: False
+  - How often  are you paid?: jobs[i].to_add[j].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
+  - How many hours are worked during that time?: jobs[i].to_add[j].hours_per_period
+    datatype: number
+    show if: 
+      variable: jobs[i].to_add[j].is_hourly
+      is: True
+    validation messages:
+      number: |
+        Enter a number, like 40. If you don't know, enter your best guess.
+  - Does the job have other incomes, like tips, commissions or bonuses?: jobs[i].to_add.there_is_another
+    datatype: yesnoradio
+---
+if: j not in ["full time","part time","self employed"]
+id: itemized job period non-pt-or-ft wages
+generic object: ALItemizedJob
+question: |
+  Details about ${ j.lower() } compensation for your ${ jobs[i].source } job
+fields:
+  - label: |
+      Amount
+    field: jobs[i].to_add[j].value
+    datatype: currency
+  - How often  are you paid this?: jobs[i].to_add[j].times_per_year
+    input type: radio
+    code: |
+      times_per_year_list
+    datatype: integer
+  - Does the job have any more incomes like tips, commissions or bonuses?: jobs[i].to_add.there_is_another
+    datatype: yesnoradio
+---
+code: |
+  if j not in ["full time","part time"]:
+    jobs[i].to_add[j].is_hourly = False
+---
+question: Are there more types of non-wage income for your job  as a ${ x.source }?
+subquestion: |
+  You have already mentioned:
+  ${ x.to_add.true_values() }
+fields:
+  - Does the job have other incomes, like tips, commissions or bonuses?: x.to_add.there_is_another
+    datatype: yesnoradio
+---
+id: jobs details about tips commissions bonuses
+generic object: ALItemizedJob
+question: |
+  Other incomes from your job as a ${ x.source }
+subquestion: |
+  You have already told us about your income from **${comma_and_list( [job_items_names.get(key, key).lower() for key in x.to_add.complete_elements().keys()] )}**.
+fields:
+  - What kind of additional income do you get from this job?: x.to_add.new_item_name
+    datatype: radio
+    choices:
+      - Tips
+      - Commissions
+      - Bonuses
+      - Other
+  - Specify: x.to_add.new_item_name
+    show if:
+      variable: x.to_add.new_item_name
+      is: "Other"
+validation code: |
+  if x.to_add.new_item_name in x.to_add.complete_elements().keys():
+    validation_error(f'You already told us about your <strong>{job_items_names.get(x.to_add.new_item_name, x.to_add.new_item_name) }</strong> that pays { currency( x.to_add[ x.to_add.new_item_name ].value )}. Pick a different name.')
+
+---
+id: edit wages and other incomes from a job
+generic object: ALItemizedJob
+continue button field: x.to_add.revisit
+question: |
+  Edit incomes from ${ x.source }
+subquestion: |
+  ${ x.to_add.table }
+
+  ${ x.to_add.add_action() }
+---
+generic object: ALItemizedValueDict
+table: x.to_add.table
+rows: x
+columns:
+  - Type: |
+      str(row_index).replace("_", " ").lower().capitalize()
+  - Amount per hour or other time period: |
+      currency(row_item.value)
+  
+edit:
+  #- exists
+  - is_part_time
+  - is_hourly
+  - times_per_year
+  - value
+---
+generic object: ALItemizedValueDict
+table: x.table
+rows: x
+columns:
+  - Type: |
+      str(row_index).replace("_", " ").lower().capitalize()
+  - Amount: |
+      currency(row_item.value)
+edit:
+  #- exists
+  - is_part_time
+  - is_hourly
+  - times_per_year
+  - value
+---
+reconsider:
+  - employer_jobs
+  - self_employed_jobs
+id: job review
+question: |
+  Review your jobs
+subquestion: |
+  Here is what you've told us about your jobs. You can add more or continue
+  to the next question.
+
+  ${ jobs_table }
+  
+  ${ jobs.add_action() }  
+
+field: review_jobs
+---
+depends on: jobs
+code: |
+  employer_jobs = jobs.filter(is_self_employed=False)
+---
+depends on: jobs
+code: |
+  self_employed_jobs = jobs.filter(is_self_employed=True)
+---
+table: jobs_table
+rows: jobs
+columns:
+  - Job: |
+      row_item.source
+  - Employer: |
+      row_item.employer.name.first if defined("row_item.employer.name.first") else "Self"
+  - Monthly gross income: |
+      currency(row_item.gross_total(times_per_year=12)) if defined("row_item.gross_total") else "$0"
+edit:
+  - revisit
+
+confirm: True
+---
+reconsider: employer_jobs
+table: employer_jobs_review_table
+rows: employer_jobs
+columns:
+  - Job: |
+      row_item.source
+edit:
+  - revisit
+
+confirm: True
+---
+reconsider: self_employed_jobs
+table: self_employed_jobs_table
+rows: self_employed_jobs
+columns:
+  - Job: |
+      row_item.source
+  - Monthly gross income: |
+      currency(row_item.gross_total(times_per_year=12)) if defined("row_item.gross_total") else "$0"
+
+edit:
+  - value
+
+confirm: True
+---
+reconsider: self_employed_jobs
+table: self_employed_jobs_review_table
+rows: self_employed_jobs
+columns:
+  - Self-employed job: |
+      row_item.source
+
+edit:
+  - value
+
+confirm: True
+---
+only sets: x.revisit
+id: review job
+generic object: ALItemizedJob
+question: Review ${ x.source } job
+fields:
+  - Job: x.source
+  - I am self-employed: x.is_self_employed
+    datatype: yesno
+  - Employer's name: x.employer.name.first
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - note: |
+      ---
+
+      Employer's contact information
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Street address: x.employer.address.address
+    address autocomplete: True
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Unit: x.employer.address.unit
+    required: False
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - City: x.employer.address.city
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - State: x.employer.address.state
+    code: |
+      states_list()
+    default: VT
+    show if:
+      variable: x.is_self_employed
+      is: False
+  - Zip or postal code: x.employer.address.zip
+    show if:
+      variable: x.is_self_employed
+      is: False
+under: |
+  ${ x.to_add.table }
+
+  ${ x.to_add.add_action() }  
+continue button field: x.revisit
+---
+generic object: ALItemizedValueDict
+table: x.table
+rows: x
+columns:
+  - Type of pay: |
+      str(row_index).replace("_", " ").lower().capitalize()
+  - Notes : |
+      "Hourly rate" if defined("row_item.is_hourly") and row_item.is_hourly == True else ""
+  - Amount: |
+      currency(row_item.value)
+  - How often paid: |
+      times_per_year(times_per_year_list, row_item.times_per_year)
+      
+  
+edit:
+  #- exists
+  - is_part_time
+  - is_hourly
+  - times_per_year
+  - value
+
+---
+
+
+---
+#id: Income from work
+#question: |
+#  Income from work
+#fields:
+#  - "Are you employed?": employed
+#    datatype: yesno
+#  - "Your employer's name": users1_employer_0_name
+#    maxlength: 23
+#  - "Your employer's address": users1_employer_0_address_one_line
+#    maxlength: 40
+#  - "Your employer's name": users1_employer_1
+#    maxlength: 23
+#  - "Your employer's address": users1_employer_1_address_one_line
+#    maxlength: 40
 ---
 id: Public assistance
 question: |
