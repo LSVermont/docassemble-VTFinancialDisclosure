@@ -11,7 +11,7 @@ modules:
 ---
 objects:
   - users: ALPeopleList.using(ask_number=True,target_number=1)
-  - household_others: ALPeopleList.using(ask_number=True,target_number=1)
+  - household_others: ALPeopleList.using(ask_number=False,complete_attribute="name.first")
   - jobs: ALItemizedJobList.using(complete_attribute="complete", ask_number=True)
 ---
 objects:
@@ -171,7 +171,7 @@ code: |
 
   Intro_screen
   # Below sets the user_role and user_ask_role by asking a question.
-  # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant'
+  # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant' 
   user_ask_role
   set_parts(subtitle=str(users))
   users.gather()
@@ -181,7 +181,7 @@ code: |
   users[0].email
   set_progress(14)
 
-  household_size
+
   
   jobs.gather()
   if len(jobs) > 0:
@@ -190,12 +190,14 @@ code: |
     
   if len(public_benefits) > 0:
     public_benefits.review_items
-  household_others_receive_benefits
 
   if len(other_incomes) > 0:
     other_incomes.review_items
   set_progress(45)
 
+  household_others.gather()
+  household_recap
+  
   users1_income_very_different_30_days_yes
 
   nav.set_section('your_expenses')
@@ -308,26 +310,70 @@ fields:
     maxlength: 26
     required: False
 ---
-id: Your household
+id: household
+#generic object: ALPeopleList
 question: |
   Your household
+subquestion: |
+  Your household includes any adults and children who live with you.
 fields:
-  - "How many people are in your household, including you?": household_size
-    datatype: integer
-    min: 0
-  - "Household other member 1 name": household_others_1_name
-    maxlength: 21
-  - "Household other member 2 name": household_others_2_name
-    maxlength: 20
-  - "Household other member 3 name": household_others_3_name
-    maxlength: 21
-  - "Household other member 4 name": household_others_4_name
-    maxlength: 20
-  - "Household other member 5 name": household_others_5_name
-    maxlength: 21
-  - "Household other member 6 name": household_others_6_name
-    maxlength: 20
+  - "Do other people live with you in your household?": household_others.there_are_any
+    datatype: yesnoradio
 ---
+#generic object: ALPeopleList
+id: any other people
+question: |
+  Do you have any other household members to tell us about?
+fields:
+  - no label: household_others.there_is_another
+    datatype: yesnoradio
+---
+id: gather household_others
+sets:
+  - household_others[i].name.first
+  - household_others[i].name.last
+  - household_others[i].name.suffix
+generic object: ALPeopleList
+question: |
+  About the ${ ordinal(i) } member of your household
+fields:
+  - code: |
+      household_others[i].name_fields()
+
+  - note: |
+      Do they earn income from any of these sources? If so, enter the **monthly amount**.
+  - "Public assistance?": household_others[i].public_benefits
+    datatype: currency
+    required: false
+  - "Wages?": household_others[i].wages
+    datatype: currency
+    required: false
+  - "Self-employment?": household_others[i].selfemployment
+    datatype: currency
+    required: false
+  - "Unemployment?": household_others[i].unemployment
+    datatype: currency
+    required: false
+  - "Child support?": household_others[i].child_support
+    datatype: currency
+    required: false
+  - "Other -- including ....?": household_others[i].other
+    datatype: currency
+    required: false
+---
+id: household recap
+question: |
+  Your household
+subquestion: |
+  % for member in household_others:
+  Name: ${ member.name }
+  
+  - Public benefits each month: ${ member.public_benefits }
+  
+  % endfor
+continue button field: household_recap
+---
+
 ################################# JOBS ##############################
 ---
 id: work
@@ -1113,25 +1159,25 @@ edit:
 
     
 ---
-id: Employment income
-question: |
-  Employment income
-fields:
-  - "Employment income for others in your household monthly amount": household_others_income_employment_monthly_amount
-    datatype: currency
-    min: 0
-  - "Self-employment income monthly amount": users1_income_self_employment_monthly_amount
-    datatype: currency
-    min: 0
-  - "Self-employment income for others in your household monthly amount": household_others_income_self_employment_monthly_amount
-    datatype: currency
-    min: 0
-  - "Name of other household member who is employed": household_others_1_employed_name
-    maxlength: 23
-  - "Other household member's employer": household_others_1_employed_employer
-    maxlength: 26
-  - "Other household member's employer address": household_others_1_employed_employer_address
-    maxlength: 40
+#id: Employment income
+#question: |
+#  Employment income
+#fields:
+#  - "Employment income for others in your household monthly amount": household_others_income_employment_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Self-employment income monthly amount": users1_income_self_employment_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Self-employment income for others in your household monthly amount": household_others_income_self_employment_monthly_amount
+#    datatype: currency
+#    min: 0
+#  - "Name of other household member who is employed": household_others_1_employed_name
+#    maxlength: 23
+#  - "Other household member's employer": household_others_1_employed_employer
+#    maxlength: 26
+#  - "Other household member's employer address": household_others_1_employed_employer_address
+#    maxlength: 40
 ---
 #id: Other income
 #question: |
@@ -1983,7 +2029,7 @@ review:
   - Edit: household_others_1_name
     button: |
       **Household other member 1 name**:
-      ${ household_others_1_name }
+      ${ household_others[0].name }
   - Edit: household_others_2_name
     button: |
       **Household other member 2 name**:
@@ -2524,7 +2570,7 @@ attachment:
       - "users1_name_full__1": ${ users[0] }
       - "users1_address_line_one": ${ users[0].address.line_one() }
       - "users1_address_line_two": ${ users[0].address.line_two() }
-      - "household_others_1_name": ${ household_others_1_name }
+      - "household_others_1_name": ${ household_others[0].name }
       - "household_others_2_name": ${ household_others_2_name }
       - "users1_phone_number": ${ users[0].phone_number }
       - "users1_phone_number__1": ${ users[0].phone_number }
