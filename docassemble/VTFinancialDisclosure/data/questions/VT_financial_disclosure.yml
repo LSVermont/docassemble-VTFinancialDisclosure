@@ -1238,14 +1238,11 @@ question: |
 
 subquestion: |
   From what you have told us, your personal monthly income is:
+  Need to add up all incomes here, not just jobs.  ${ currency(jobs.total(times_per_year = 12)) }
 
-  Need to add up all incomes here, not just jobs.
+  The monthly income of other household members is: ${ currency(household_others_income.total(times_per_year = 12)) }
 
-  ${ currency(jobs.total(times_per_year = 12)) }
-
-  Your household monthly income is:
-
-  ${ currency(household_others_income.total(times_per_year = 12)) }
+  For a total of: ${ currency(jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) } each month
   
 fields:
   - "Is your household income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days_yes
@@ -1982,24 +1979,7 @@ fields:
       ${ collapse_template(which_county_to_choose) }
       ${ collapse_template(in_which_county) }
 ---
-id: These are not needed
-question: |
-  These are not needed
-fields:
-  - "Address": Address_3
-    maxlength: 38
-  - "Check box1421328": Check_Box1421328
-    datatype: yesno
-    required: False
-  - "Check box1411327": Check_Box1411327
-    datatype: yesno
-    required: False
-  - "Text6": Text6
-    maxlength: 22
-    required: False
-  - "Text17": Text17
-    maxlength: 5
-    required: False
+######################### PREVIEW SCREEN ################################
 ---
 id: preview financial_disclosure
 question: |
@@ -2026,6 +2006,8 @@ code: |
   # a different address than the user's
   [user.address.address for user in users.complete_elements()]
   addresses_to_search = [user.address for user in users.complete_elements()]
+---
+######################### REVIEW SCREEN ################################
 ---
 id: financial disclosure form review screen
 event: review_financial_disclosure
@@ -2711,25 +2693,33 @@ attachment:
       
 
 
-      - "users1_receives_benefits_yes": ${ users1_receives_benefits }
-      - "users1_receives_benefits_no": ${ not users1_receives_benefits }
+      - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
+      - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
       - "household_others_receive_benefits_yes": ${ household_others_receive_benefits }
       - "household_others_receive_benefits_no": ${ not household_others_receive_benefits }
 
-
-      - "users1_income_employment_monthly_amount": ${ currency(users1_income_employment_monthly_amount) }
-      - "users1_income_self_employment_monthly_amount": ${ currency(users1_income_self_employment_monthly_amount) }
-      - "users1_expenses_medical_monthly_amount": ${ currency(users1_expenses_medical_monthly_amount) }
-      - "users1_income_investments_monthly_amount": ${ currency(users1_income_investments_monthly_amount) }
-      - "users1_expenses_child_support_monthly_amount": ${ currency(users1_expenses_child_support_monthly_amount) }
-      - "users1_income_unemployment_monthly_amount": ${ currency(users1_income_unemployment_monthly_amount) }
-      - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
-      - "users1_income_child_support_monthly_amount": ${ currency(users1_income_child_support_monthly_amount) }
-      - "users1_expenses_property_tax_monthly_amount": ${ currency(users1_expenses_property_tax_monthly_amount) }
       - "users1_benefits_monthly_amount": ${ currency(users1_benefits_monthly_amount) }
-      - "users1_expenses_all_insurance_monthly_amount": ${ currency(users1_expenses_all_insurance_monthly_amount) }
-      - "users1_income_other_monthly_amount": ${ currency(users1_income_other_monthly_amount) }
-      - "users1_income_monthly_total": ${ currency(users1_income_monthly_total) }
+      - "users1_income_employment_monthly_amount": ${ "{:.2f}".format(jobs.total(source=['part time', 'full time', 'Tips', 'Commissions','Bonuses','Royalties'],times_per_year=12)) }
+      - "users1_income_self_employment_monthly_amount": |
+          % if employed and is_self_employed and has_schedule_c:
+          ${ "{:.2f}".format(self_employed_net_income/12) }
+          % elif employed and is_self_employed and do_self_employment_worksheet:
+          ${ "{:.2f}".format(self_empl_gross_sales_monthly_amount - float(sum([ expense.total(times_per_year=12) for expense in al_expense_lists ]))) }
+          % else:
+          0.00
+          % endif
+      - "users1_income_child_support_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['child support'], times_per_year=12)) }
+      - "users1_income_investments_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['investments'], times_per_year=12)) }
+      - "users1_income_unemployment_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['unemployment income'], times_per_year=12)) } 
+      - "users1_income_other_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['other'], times_per_year=12)) }
+      - "users1_income_monthly_total": |
+          % if employed and is_self_employed and has_schedule_c:
+          ${ "{:.2f}".format((other_incomes.total(times_per_year = 12)) + (jobs.total(times_per_year = 12)) + (float(self_employed_net_income/12))) }
+          % elif employed and is_self_employed and do_self_employment_worksheet:
+          ${ "{:.2f}".format(float(other_incomes.total(times_per_year = 12)) + float(jobs.total(times_per_year = 12)) + float(self_empl_gross_sales_monthly_amount)  - float(sum([ expense.total(times_per_year=12) for expense in al_expense_lists ]))) }
+          % else: 
+          ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12)) }
+          % endif
 
       - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "wages", times_per_year = 12)) }
       - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "self employment", times_per_year = 12)) }
@@ -2748,6 +2738,11 @@ attachment:
       - "users1_expenses_fuel_monthly_amount": ${ currency(users1_expenses_fuel_monthly_amount) }
       - "users1_expenses_phone_monthly_amount": ${ currency(users1_expenses_phone_monthly_amount) } 
       - "users1_expenses_clothes_monthly_amount": ${ currency(users1_expenses_clothes_monthly_amount) }
+      - "users1_expenses_medical_monthly_amount": ${ currency(users1_expenses_medical_monthly_amount) }
+      - "users1_expenses_property_tax_monthly_amount": ${ currency(users1_expenses_property_tax_monthly_amount) }
+      - "users1_expenses_all_insurance_monthly_amount": ${ currency(users1_expenses_all_insurance_monthly_amount) }
+      - "users1_expenses_child_support_monthly_amount": ${ currency(users1_expenses_child_support_monthly_amount) }
+      - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
       - "users1_expenses_other_1_monthly_amount": ${ currency(users1_expenses_other_1_monthly_amount) }
       - "users1_expenses_other_2_monthly_amount": ${ currency(users1_expenses_other_2_monthly_amount) }
       - "total_income_monthly_total": ${ currency(total_income_monthly_total) }
