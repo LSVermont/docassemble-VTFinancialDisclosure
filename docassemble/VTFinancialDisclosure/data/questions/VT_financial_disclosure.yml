@@ -150,12 +150,12 @@ continue button field: financial_disclosure_preview_question
 ---
 sections:
   - intro: Is this tool right for you
-  - about_you: You and your household
-  - case_info: Your court case
+  - about_you: About you
   - your_income: Your income
+  - your_household: Your household
   - your_expenses: Your expenses
   - your_assets: Your property and assets
-  - reasons: Other info
+  - case_info: Your court case
   - review_financial_disclosure: <i class="fa-solid fa-pencil"></i> <u>Edit your answers</u>
   - sign: Sign your document
   - get_docs: Download your document
@@ -172,17 +172,17 @@ code: |
   Intro_screen
   # Below sets the user_role and user_ask_role by asking a question.
   # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant' 
+  nav.set_section('about_you')
   user_ask_role
-  set_parts(subtitle=str(users))
+  
   users.gather()
   users[0].birthdate
   users[0].address.address
   users[0].phone_number
-  users[0].email
   set_progress(14)
 
 
-  
+  nav.set_section('your_income')
   jobs.gather()
   if len(jobs) > 0:
     review_jobs
@@ -195,8 +195,10 @@ code: |
     other_incomes.review_items
   set_progress(45)
 
+  nav.set_section('your_household')
   household_others.gather()
-
+  household_size
+  household_recap
   
   users1_income_very_different_30_days_yes
 
@@ -227,7 +229,7 @@ code: |
 
 
 
-  
+  nav.set_section('case_info')
   trial_court_division
   if trial_court_division == "Environmental":
     user_selected_county = "Environmental"
@@ -302,12 +304,23 @@ fields:
     required: True
     datatype: BirthDate
 ---
-id: Phone number
+id: your contact information
 question: |
-  Phone number
-fields:
-  - "Your work phone or other phone number": users1_work_phone_number
-    maxlength: 26
+  What is your contact information?
+subquestion: |
+  How can the court reach you other than by mail?
+
+  If you do not have a phone number or email, you can use a trusted friend's phone number. But the friend must be someone you can rely on to give you a message.
+
+fields:  
+  - Home or cell phone number: users[0].phone_number
+    datatype: al_international_phone
+    required: False
+  - Work phone or other phone number: users[0].work_phone_number
+    datatype: al_international_phone
+    required: False
+  - Email address: users[0].email    
+    datatype: email
     required: False
 ---
 id: household
@@ -324,6 +337,12 @@ fields:
     show if:
       variable: household_others.there_are_any
       is: True
+---
+code: |
+  if household_others.target_number > 0:
+    household_size = household_others.target_number + 1
+  else:
+    household_size = 1
 ---
 #generic object: ALPeopleList
 id: any other people
@@ -2011,19 +2030,6 @@ event: review_financial_disclosure
 question: |
   Review your answers
 review:
-  - Edit: trial_court_division
-    button: |
-      **Trial court**
-  
-      % if defined("trial_court_division"):
-      ${ trial_court_division } Division
-      
-      ${ trial_court.address.county } County
-      % endif
-  - Edit: docket_number
-    button: |
-      **Docket number**:
-      ${ docket_number }
   - Edit: users.revisit
     button: |
       **Users**
@@ -2051,10 +2057,6 @@ review:
     button: |
       **Household other member 4 name**:
       ${ household_others_4_name }
-  - Edit: users1_work_phone_number
-    button: |
-      **Your work phone or other phone number**:
-      ${ users1_work_phone_number }
   - Edit: household_others_5_name
     button: |
       **Household other member 5 name**:
@@ -2063,35 +2065,135 @@ review:
     button: |
       **Household other member 6 name**:
       ${ household_others_6_name }
-  - Edit: users[0].birthdate
-    button: |
-      **Your birthdate:**:
-      ${ users[0].birthdate }
 
   - Edit: household_size
     button: |
       **Size of your household**:
       ${ household_size }
-  - Edit: employed
+
+
+
+
+  - Edit: 
+      - employed
     button: |
-      **Are you employed?**:
-      ${ word(yesno(employed)) }
-  - Edit: users1_employer_0_name
+      **Employed**
+      
+      - ${ word(yesno(employed)) }
+
+  - Edit: 
+      - review_jobs
     button: |
-      **Your employer's name**:
-      ${ users1_employer_0_name }
-  - Edit: users1_employer_0_address_one_line
+      **Jobs**
+
+      % if jobs.number_gathered() == 0:
+      - None
+      % else:
+      Edit all details about your 
+      % if jobs.number_gathered() == 1:
+      job. Or add or delete a job.:
+      
+      % endif
+      % if jobs.number_gathered() > 1:
+      jobs. Or add or delete a job.:
+      
+      % endif
+      % for item in jobs:
+      - ${ item.source }
+      % endfor
+      % endif
+
+  - Edit: 
+      - jobs[0].source
+      - jobs[0].is_self_employed
+
     button: |
-      **Your employer's address**:
-      ${ users1_employer_0_address_one_line }
-  - Edit: users1_employer_1
+      % if jobs[0].is_self_employed:
+      - Edit employer name and address: Self employed
+      % else:
+      - Edit employer name and address: ${ jobs[0].employer.name.first }
+      % endif
+      
+  - Edit: 
+      - jobs[1].source
+      - jobs[1].is_self_employed
+
     button: |
-      **Your employer's name**:
-      ${ users1_employer_1 }
-  - Edit: users1_employer_1_address_one_line
+      % if jobs[1].is_self_employed:
+      - Edit employer name and address: Self employed
+      % else:
+      - Edit employer name and address: ${ jobs[1].employer.name.first }
+      % endif
+
+  - Edit: 
+      - jobs[2].source
+      - jobs[2].is_self_employed 
+
     button: |
-      **Your employer's address**:
-      ${ users1_employer_1_address_one_line }
+      % if jobs[2].is_self_employed:
+      - Edit employer name and address: Self employed
+      % else:
+      - Edit employer name and address: ${ jobs[2].employer.name.first }
+      % endif
+
+  - Edit: 
+      - jobs[3].source
+      - jobs[3].is_self_employed
+
+    button: |
+      % if jobs[3].is_self_employed:
+      - Edit employer name and address: Self employed
+      % else:
+      - Edit employer name and address: ${ jobs[3].employer.name.first }
+      % endif
+      
+
+
+
+            
+  - Edit: users1_income_very_different_30_days_yes
+    button: |
+      **Your income has been significantly different than usual in the last 30 days**:
+      ${ word(yesno(users1_income_very_different_30_days_yes)) }
+  - Edit: users1_income_very_different_30_days_amount
+    button: |
+      **Current income**:
+      ${ currency(users1_income_very_different_30_days_amount) }
+  - Edit: household_income_very_different_30_days_amount
+    button: |
+      **Current household income very different 30 days amount**:
+      ${ currency(household_income_very_different_30_days_amount) }
+  - Edit: users1_income_very_different_30_days_why
+    button: |
+      **Why has your income been significantly different?**:
+      ${ single_paragraph(users1_income_very_different_30_days_why) }
+
+
+      
+
+
+  - Edit: trial_court_division
+    button: |
+      **Trial court**
+  
+      % if defined("trial_court_division"):
+      ${ trial_court_division } Division
+      
+      ${ trial_court.address.county } County
+      % endif
+  - Edit: docket_number
+    button: |
+      **Docket number**:
+      ${ docket_number }
+
+  - Edit: signature_date
+    button: |
+      **Date of signature**:
+      ${ signature_date }
+
+
+
+      
   - Edit: users1_expenses_rent_mortgage_monthly_amount
     button: |
       **Rent or mortgage monthly amount**:
@@ -2220,10 +2322,9 @@ review:
     button: |
       **Users1 expenses other 3 monthly amount**:
       ${ currency(users1_expenses_other_3_monthly_amount) }
-  - Edit: users1_income_very_different_30_days_yes
-    button: |
-      **Has your income been significantly different than usual in the last 30 days?**:
-      ${ word(yesno(users1_income_very_different_30_days_yes)) }
+      
+
+      
   - Edit: users1_expenses_monthly_total
     button: |
       **Users1 expenses monthly total**:
@@ -2460,22 +2561,8 @@ review:
     button: |
       **Household others 3 employed employer address**:
       ${ household_others_3_employed_employer_address }
-  - Edit: users1_income_very_different_30_days_amount
-    button: |
-      **Users1 income very different 30 days amount**:
-      ${ currency(users1_income_very_different_30_days_amount) }
-  - Edit: household_income_very_different_30_days_amount
-    button: |
-      **Household income very different 30 days amount**:
-      ${ currency(household_income_very_different_30_days_amount) }
-  - Edit: users1_income_very_different_30_days_why
-    button: |
-      **Why has your income been significantly different than usual in the last 30 days?**:
-      > ${ single_paragraph(users1_income_very_different_30_days_why) }
-  - Edit: signature_date
-    button: |
-      **Date of signature**:
-      ${ signature_date }
+
+
   - Edit: Address_3
     button: |
       **Address**:
@@ -2494,23 +2581,26 @@ rows: users
 columns:
   - Name: |
       row_item.name.full() if defined("row_item.name.first") else ""
+  - Birthdate: |
+      row_item.birthdate if defined("row_item.birthdate") else ""
   - Address: |
       row_item.address.block() if defined("row_item.address.address") else ""
-  - Phone number: |
-      row_item.phone_number if defined("row_item.phone_number") else ""
-  - Signature: |
-      row_item.signature if defined("row_item.signature") else ""
   - Mailing address: |
       row_item.mailing_address.block() if defined("row_item.mailing_address.address") else ""
+  - Phone number: |
+      row_item.phone_number if defined("row_item.phone_number") else ""
+  - Work phone: |
+      row_item.work_phone_number if defined("row_item.wprk_phone_number") else ""
   - Email: |
       row_item.email if defined("row_item.email") else ""
 edit:
   - name.first
   - address.address
   - phone_number
-  - signature
+  - work_phone_number
   - mailing_address.address
   - email
+  - birthdate
 confirm: True
 
 ---
@@ -2573,28 +2663,52 @@ attachment:
       - "docket_number": ${ docket_number }
       - "users1_name_full": ${ users[0] }
       - "users1_name_full__1": ${ users[0] }
-      - "users1_address_line_one": ${ users[0].address.line_one() }
-      - "users1_address_line_two": ${ users[0].address.line_two() }
-      - "household_others_1_name": ${ household_others[0].name }
-      - "household_others_2_name": ${ household_others_2_name }
-      - "users1_phone_number": ${ users[0].phone_number }
-      - "users1_phone_number__1": ${ users[0].phone_number }
-      - "household_others_3_name": ${ household_others_3_name }
-      - "household_others_4_name": ${ household_others_4_name }
-      - "users1_work_phone_number": ${ users1_work_phone_number }
-      - "users1_work_phone_number__1": ${ users1_work_phone_number }
-      - "household_others_5_name": ${ household_others_5_name }
-      - "household_others_6_name": ${ household_others_6_name }
       - "users1_birth_month": ${ format_date(users[0].birthdate, format='M') }
       - "users1_birth_day": ${ format_date(users[0].birthdate, format='dd') }
       - "users1_birth_year": ${ format_date(users[0].birthdate, format='yyyy') }
+      - "users1_address_line_one": ${ users[0].address.line_one() }
+      - "users1_address_line_two": ${ users[0].address.line_two() }
+      - "household_others_1_name": ${ household_others[0].name }
+      - "household_others_2_name": ${ household_others[1].name }
+      - "users1_phone_number": ${ users[0].phone_number }
+      - "users1_phone_number__1": ${ users[0].phone_number }
+      - "household_others_3_name": ${ household_others[2].name }
+      - "household_others_4_name": ${ household_others[3].name }
+      - "users1_work_phone_number": ${ users[0].work_phone_number }
+      - "users1_work_phone_number__1": ${ users[0].work_phone_number }
+      - "household_others_5_name": ${ household_others[4].name }
+      - "household_others_6_name": ${ household_others[5].name }
       - "household_size": ${ household_size }
       - "employed_yes": ${ employed }
       - "employed_no": ${ not employed }
-      - "users1_employer_0_name": ${ users1_employer_0_name }
-      - "users1_employer_0_address_one_line": ${ users1_employer_0_address_one_line }
-      - "users1_employer_1": ${ users1_employer_1 }
-      - "users1_employer_1_address_one_line": ${ users1_employer_1_address_one_line }
+
+      - "users1_employer_0_name": |
+          % if len(jobs) > 0 and jobs[0].is_self_employed:
+            Self-employed
+          % elif len(jobs) > 0:
+            ${ jobs[0].employer }
+          % else:
+            
+          % endif
+      - "users1_employer_0_address_one_line": |
+          % if defined("jobs[0].employer.address"):
+          ${ jobs[0].employer.address.on_one_line() }
+          % endif
+
+      - "users1_employer_1": |
+          % if len(jobs) > 1 and jobs[1].is_self_employed:
+            Self-employed
+          % elif len(jobs) > 1:
+            ${ jobs[1].employer }
+          % else:
+            
+          % endif
+      - "users1_employer_1_address_one_line": |
+          % if defined("jobs[1].employer.address"):
+          ${ jobs[1].employer.address.on_one_line() }
+          % endif
+      
+
       - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
       - "users1_receives_benefits_yes": ${ users1_receives_benefits }
       - "users1_receives_benefits_no": ${ not users1_receives_benefits }
