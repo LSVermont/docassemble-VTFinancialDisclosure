@@ -11,7 +11,7 @@ modules:
 ---
 objects:
   - users: ALPeopleList.using(ask_number=True,target_number=1)
-  - household_others: ALPeopleList.using(ask_number=False,complete_attribute="name.first")
+  - household_others: ALPeopleList.using(complete_attribute="name.first", ask_number=True)
   - jobs: ALItemizedJobList.using(complete_attribute="complete", ask_number=True)
 ---
 objects:
@@ -196,7 +196,7 @@ code: |
   set_progress(45)
 
   household_others.gather()
-  household_recap
+
   
   users1_income_very_different_30_days_yes
 
@@ -319,6 +319,11 @@ subquestion: |
 fields:
   - "Do other people live with you in your household?": household_others.there_are_any
     datatype: yesnoradio
+  - "How many other people?": household_others.target_number
+    datatype: integer
+    show if:
+      variable: household_others.there_are_any
+      is: True
 ---
 #generic object: ALPeopleList
 id: any other people
