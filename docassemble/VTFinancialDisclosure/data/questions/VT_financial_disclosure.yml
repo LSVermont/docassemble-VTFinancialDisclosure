@@ -20,10 +20,8 @@ objects:
 objects:
   - household_others[i].income: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
 ---
-id: household_others complete
-code: |
-  household_others[i].income.gather()
-  household_others[i].complete = True
+objects:
+  - household_others_income: ALIncomeList.using(auto_gather=False)
 ---
 objects:
   - all_courts: ALCourtLoader.using(file_name='docassemble.VTSharedYMLFile:data/sources/courts_list_full.xlsx')
@@ -178,6 +176,12 @@ code: |
   allowed_courts = []
 
   intro_screen
+  household_others.gather()
+  household_others_income.gathered
+  household_size
+  household_recap
+  users1_income_very_different_30_days_yes
+  
   # Below sets the user_role and user_ask_role by asking a question.
   # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant' 
   nav.set_section('about_you')
@@ -204,9 +208,8 @@ code: |
   set_progress(45)
 
   nav.set_section('your_household')
-  household_others.gather()
-  household_size
-  household_recap
+
+
   
   users1_income_very_different_30_days_yes
 
@@ -308,6 +311,8 @@ fields:
     datatype: email
     required: False
 ---
+##################### HOUSEHOLD OTHERS AND THEIR INCOME #########################
+---
 id: household
 #generic object: ALPeopleList
 question: |
@@ -337,6 +342,27 @@ fields:
   - no label: household_others.there_is_another
     datatype: yesnoradio
 ---
+id: household_others complete
+code: |
+  household_others[i].income.gather()
+  household_others[i].complete = True
+  household_others_income.gathered = True
+---
+id: household_others income
+variable name: household_others[i].income.terms_ordered
+data: !!omap
+  - public benefits: "Public assistance"
+  - wages: "Wages (before taxes are taken out)"
+  - self employment: "Self employment"
+  - unemployment: "Unemployment"
+  - child support: "Child support income"
+  - investments: "Income from investments"
+  - other: "Other income"
+---
+id: household income ordered object for checkboxes
+objects:
+  - household_others_income_ordered: DAOrderedDict.using(elements=household_others[i].income.terms_ordered, auto_gather=False, gathered=True)
+---
 id: gather household_others
 sets:
   - household_others[i].name.first
@@ -355,54 +381,115 @@ fields:
       If they don't have a steady income amount, look back over the last year to figure out their monthly income. If they only lived with you for part of the year, look back over that time to figure out their monthly income.
 
       **Monthly income from:**
-      
-  - "Public assistance?": household_others[i].public_benefits
+  - Do they get any income?: household_others[i].income.selected_types
+    datatype: checkboxes
+    code: |
+      household_others_income_ordered
+---
+id: household_others income info for list
+#generic object: ALIncomeList
+reconsider: household_others[i].income[j].display_name
+question: |
+  Tell us about ${ household_others[i].income[j].display_name.lower()} for ${ household_others[i].name.full() } 
+subquestion: |
+  % if j > 1:
+  You have already told us about your benefits from ${ comma_and_list(household_others_income.display_name.lower() for household_others_income in household_others[i].income.complete_elements()) }.
+  % endif
+fields:
+  - Source of income: household_others[i].income[j].source
+    input type: dropdown
+    code: |
+      household_others_income_ordered
+  - What is their employer's name?: household_others[i].income[j].employer_name
+    maxlength: 30
+    show if:
+      variable: household_others[i].income[j].source
+      is: wages
+  - What is their employer's address?: household_others[i].income[j].employer_address_on_one_line
+    maxlength: 40
+    show if:
+      variable: household_others[i].income[j].source
+      is: wages
+  - What is their business address?: household_others[i].income[j].employer_address_on_one_line
+    maxlength: 40
+    show if:
+      variable: household_others[i].income[j].source
+      is: self employment
+  - What type of income?: household_others[i].income[j].source_other
+    maxlength: 14
+    show if:
+      variable: household_others[i].income[j].source
+      is: other
+  - Times per year you receive this income: household_others[i].income[j].times_per_year
+    input type: radio
+    default: 12
+    code: |
+      times_per_year_list
+  - Amount of income: household_others[i].income[j].value
     datatype: currency
-    required: false
-  - "Wages (before taxes are taken out)?": household_others[i].wages
-    datatype: currency
-    required: false
-  - "Self-employment?": household_others[i].selfemployment
-    datatype: currency
-    required: false
-  - "Unemployment?": household_others[i].unemployment
-    datatype: currency
-    required: false
-  - "Child support?": household_others[i].child_support
-    datatype: currency
-    required: false
-  - "Income from investments or assets?": household_others[i].investments
-    datatype: currency
-    required: false
-  - "Other -- including ....?": household_others[i].other
-    datatype: currency
-    required: false
+validation code: |
+  if household_others[i].income[j].source != "other":
+    household_others[i].income[j].display_name = household_others[i].income.terms_ordered.get(household_others[i].income[j].source, household_others[i].income[j].source)
+  else:
+    household_others[i].income[j].display_name = household_others[i].income[j].source_other
+---
+id: household_others income set display name
+code: |
+  if defined('household_others[i].income[j].source') and household_others[i].income[j].source != "other":
+    household_others[i].income[j].display_name = household_others[i].income.terms_ordered.get(household_others[i].income[j].source, household_others[i].income[j].source)
+  elif defined('household_others[i].income[j].source') and household_others[i].income[j].source == "other" and defined('household_others[i].income[j].source_other'):
+    household_others[i].income[j].display_name = household_others[i].income[j].source_other
+  else:
+    household_others[i].income[j].display_name = household_others_income_other_display
+---
+id: household_others income other display
+comment: |
+  This keeps the text that may be changed near the top of the public benefits section.
+  Used in:
+  Tell us about ______
+code: |
+  household_others_income_other_display = "another source of income"
+---
+code: |
+  for member in household_others:
+    for income in member.income:
+      household_others_income.append(income)
+      household_others_income[-1].name = member.name
+  household_others_income.gathered = True
 ---
 id: household recap
 question: |
   Your household and their income
 subquestion: |
   % for member in household_others:
-  Name: ${ member.name }
+  Name: **${ member.name }**
+
+  Income each month:
   
-  - Public assistance each month: ${ member.public_benefits }
-
-  - Income from wages (before taxes are taken out): ${ member.wages }
-
-  - Self employment: ${ member.selfemployment }
-
-  - Unemployment: ${ member.unemployment }
-
-  - Child support: ${ member.child_support }
-
-  - Income from investments or assets: ${ member.investments }
-
-  - Other income: ${ member.other }
+  - Public assistance: ${ currency(member.income.total(source = "public benefits", times_per_year = 12)) }
   
+  - Wages: ${ currency(member.income.total(source = "wages", times_per_year = 12)) }
+  
+  - Self employment: ${ currency(member.income.total(source = "self employment", times_per_year = 12)) }
+  
+  - Unemployment: ${ currency(member.income.total(source = "unemployment", times_per_year = 12)) }
+  
+  - Child support: ${ currency(member.income.total(source = "child support", times_per_year = 12)) }
+  
+  - Investment income: ${ currency(member.income.total(source = "investments", times_per_year = 12)) }
+  
+  - Other income: ${ currency(member.income.total(source = "other", times_per_year = 12)) }
+
   % endfor
 continue button field: household_recap
 ---
-
+id: public assistance household
+code: |
+  if household_others_income.total(source = "public benefits", times_per_year = 12) > 0:
+    household_others_receive_benefits == True
+  else:
+    household_others_receive_benefits == False
+---
 ################################# JOBS ##############################
 ---
 id: work
@@ -838,24 +925,6 @@ edit:
   - value
 
 ---
-
-
----
-#id: Income from work
-#question: |
-#  Income from work
-#fields:
-#  - "Are you employed?": employed
-#    datatype: yesno
-#  - "Your employer's name": users1_employer_0_name
-#    maxlength: 23
-#  - "Your employer's address": users1_employer_0_address_one_line
-#    maxlength: 40
-#  - "Your employer's name": users1_employer_1
-#    maxlength: 23
-#  - "Your employer's address": users1_employer_1_address_one_line
-#    maxlength: 40
----
 ################################# PUBLIC BENEFITS ##############################
 comment: |
   --Notes on how a list is gathered, using public_benefits as an example--
@@ -1036,13 +1105,7 @@ edit:
   - source
   - value
 ---
-id: Public assistance household
-question: |
-  Public assistance in your household
-fields:
-  - "Do others in your household get public assistance?": household_others_receive_benefits
-    datatype: yesnoradio
----
+
 ################################# OTHER INCOMES ##############################
 ---
 variable name: other_incomes.terms_ordered
@@ -1060,6 +1123,7 @@ data: !!omap
 code: |
   other_incomes_other_display = "other source of income"
 ---
+## This is for the user's other incomes.
 objects:
   - other_incomes: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
 ---
@@ -1165,102 +1229,23 @@ edit:
   - value
 ---
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
 ---
-#id: Employment income
-#question: |
-#  Employment income
-#fields:
-#  - "Employment income for others in your household monthly amount": household_others_income_employment_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Self-employment income monthly amount": users1_income_self_employment_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Self-employment income for others in your household monthly amount": household_others_income_self_employment_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Name of other household member who is employed": household_others_1_employed_name
-#    maxlength: 23
-#  - "Other household member's employer": household_others_1_employed_employer
-#    maxlength: 26
-#  - "Other household member's employer address": household_others_1_employed_employer_address
-#    maxlength: 40
----
-#id: Other income
-#question: |
-#  Other income
-#fields:
-#  - "Investments income monthly amount": users1_income_investments_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Household others income investments monthly amount": household_others_income_investments_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Household others income unemployment monthly amount": household_others_income_unemployment_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Users1 income unemployment monthly amount": users1_income_unemployment_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Users1 income child support monthly amount": users1_income_child_support_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Household others income child support monthly amount": household_others_income_child_support_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Users1 income other monthly amount": users1_income_other_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Household others income other monthly amount": household_others_income_other_monthly_amount
-#    datatype: currency
-#    min: 0
-#  - "Users1 income monthly total": users1_income_monthly_total
-#    datatype: currency
-#    min: 0
-#  - "Household others income monthly total": household_others_income_monthly_total
-#    datatype: currency
-#    min: 0
-#  - "Total income monthly total": total_income_monthly_total
-#    datatype: currency
-#    min: 0
+###################### CHANGE IN INCOME / DIFFERENT INCOME  ##########################
 ---
 id: different monthly income
 question: |
   Household income in the last 30 days
 
 subquestion: |
-  From what you have told us, your personal monthly income over the last year is:
+  From what you have told us, your personal monthly income is:
+  Need to add up all incomes here, not just jobs.  ${ currency(jobs.total(times_per_year = 12)) }
 
-  ${ jobs.total }
+  The monthly income of other household members is: ${ currency(household_others_income.total(times_per_year = 12)) }
 
-  Your household monthly income over the last year is:
-
-  ADD IT UP
+  For a total of: ${ currency(jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) } each month
   
 fields:
-  - "Is your household income in the last 30 days significantly different from the past year?": users1_income_very_different_30_days_yes
+  - "Is your household income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days_yes
     datatype: yesnoradio
   - "Your current monthly income": users1_income_very_different_30_days_amount
     datatype: currency
@@ -1994,24 +1979,7 @@ fields:
       ${ collapse_template(which_county_to_choose) }
       ${ collapse_template(in_which_county) }
 ---
-id: These are not needed
-question: |
-  These are not needed
-fields:
-  - "Address": Address_3
-    maxlength: 38
-  - "Check box1421328": Check_Box1421328
-    datatype: yesno
-    required: False
-  - "Check box1411327": Check_Box1411327
-    datatype: yesno
-    required: False
-  - "Text6": Text6
-    maxlength: 22
-    required: False
-  - "Text17": Text17
-    maxlength: 5
-    required: False
+######################### PREVIEW SCREEN ################################
 ---
 id: preview financial_disclosure
 question: |
@@ -2039,7 +2007,9 @@ code: |
   [user.address.address for user in users.complete_elements()]
   addresses_to_search = [user.address for user in users.complete_elements()]
 ---
-id: financial disclosure form 100001 review screen
+######################### REVIEW SCREEN ################################
+---
+id: financial disclosure form review screen
 event: review_financial_disclosure
 question: |
   Review your answers
@@ -2220,10 +2190,6 @@ review:
     button: |
       **Electric monthly amount**:
       ${ currency(users1_expenses_electric_monthly_amount) }
-  - Edit: household_others_receive_benefits
-    button: |
-      **Do others in your household get public assistance?**:
-      ${ word(yesno(household_others_receive_benefits)) }
   - Edit: users1_expenses_fuel_monthly_amount
     button: |
       **Fuel monthly amount**:
@@ -2637,6 +2603,8 @@ subquestion: |
 
 progress: 100
 ---
+############################### ATTACHMENT ############################
+---
 # ALDocument objects specify the metadata for each template
 objects:
   - financial_disclosure_Post_interview_instructions: ALDocument.using(title="Instructions", filename="financial_disclosure_next_steps.docx", enabled=True, has_addendum=False)
@@ -2659,7 +2627,7 @@ attachment:
   tagged pdf: True
 ---
 attachment:
-  name: financial disclosure  form 100001
+  name: financial disclosure form
   filename: financial_disclosure
   variable name: financial_disclosure_attachment[i]
   skip undefined: True
@@ -2682,20 +2650,21 @@ attachment:
       - "users1_birth_year": ${ format_date(users[0].birthdate, format='yyyy') }
       - "users1_address_line_one": ${ users[0].address.line_one() }
       - "users1_address_line_two": ${ users[0].address.line_two() }
-      - "household_others_1_name": ${ household_others[0].name }
-      - "household_others_2_name": ${ household_others[1].name }
-      - "users1_phone_number": ${ users[0].phone_number }
-      - "users1_phone_number__1": ${ users[0].phone_number }
-      - "household_others_3_name": ${ household_others[2].name }
-      - "household_others_4_name": ${ household_others[3].name }
       - "users1_work_phone_number": ${ users[0].work_phone_number }
       - "users1_work_phone_number__1": ${ users[0].work_phone_number }
+      - "users1_phone_number": ${ users[0].phone_number }
+      - "users1_phone_number__1": ${ users[0].phone_number }
+        
+      - "household_others_1_name": ${ household_others[0].name }
+      - "household_others_2_name": ${ household_others[1].name }
+      - "household_others_3_name": ${ household_others[2].name }
+      - "household_others_4_name": ${ household_others[3].name }
       - "household_others_5_name": ${ household_others[4].name }
       - "household_others_6_name": ${ household_others[5].name }
       - "household_size": ${ household_size }
+
       - "employed_yes": ${ employed }
       - "employed_no": ${ not employed }
-
       - "users1_employer_0_name": |
           % if len(jobs) > 0 and jobs[0].is_self_employed:
             Self-employed
@@ -2723,38 +2692,58 @@ attachment:
           % endif
       
 
-      - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
-      - "users1_receives_benefits_yes": ${ users1_receives_benefits }
-      - "users1_receives_benefits_no": ${ not users1_receives_benefits }
-      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
-      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
+
+      - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
+      - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
       - "household_others_receive_benefits_yes": ${ household_others_receive_benefits }
       - "household_others_receive_benefits_no": ${ not household_others_receive_benefits }
-      - "users1_expenses_fuel_monthly_amount": ${ currency(users1_expenses_fuel_monthly_amount) }
-      - "users1_expenses_phone_monthly_amount": ${ currency(users1_expenses_phone_monthly_amount) }
-      - "users1_income_employment_monthly_amount": ${ currency(users1_income_employment_monthly_amount) }
-      - "household_others_income_employment_monthly_amount": ${ currency(household_others_income_employment_monthly_amount) }
-      - "users1_expenses_clothes_monthly_amount": ${ currency(users1_expenses_clothes_monthly_amount) }
-      - "users1_income_self_employment_monthly_amount": ${ currency(users1_income_self_employment_monthly_amount) }
-      - "household_others_income_self_employment_monthly_amount": ${ currency(household_others_income_self_employment_monthly_amount) }
-      - "users1_expenses_medical_monthly_amount": ${ currency(users1_expenses_medical_monthly_amount) }
-      - "users1_income_investments_monthly_amount": ${ currency(users1_income_investments_monthly_amount) }
-      - "household_others_income_investments_monthly_amount": ${ currency(household_others_income_investments_monthly_amount) }
-      - "users1_expenses_child_support_monthly_amount": ${ currency(users1_expenses_child_support_monthly_amount) }
-      - "household_others_income_unemployment_monthly_amount": ${ currency(household_others_income_unemployment_monthly_amount) }
-      - "users1_income_unemployment_monthly_amount": ${ currency(users1_income_unemployment_monthly_amount) }
-      - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
-      - "users1_income_child_support_monthly_amount": ${ currency(users1_income_child_support_monthly_amount) }
-      - "household_others_income_child_support_monthly_amount": ${ currency(household_others_income_child_support_monthly_amount) }
-      - "users1_expenses_property_tax_monthly_amount": ${ currency(users1_expenses_property_tax_monthly_amount) }
+
       - "users1_benefits_monthly_amount": ${ currency(users1_benefits_monthly_amount) }
-      - "household_others_benefits_monthly_amount": ${ currency(household_others_benefits_monthly_amount) }
+      - "users1_income_employment_monthly_amount": ${ "{:.2f}".format(jobs.total(source=['part time', 'full time', 'Tips', 'Commissions','Bonuses','Royalties'],times_per_year=12)) }
+      - "users1_income_self_employment_monthly_amount": |
+          % if employed and is_self_employed and has_schedule_c:
+          ${ "{:.2f}".format(self_employed_net_income/12) }
+          % elif employed and is_self_employed and do_self_employment_worksheet:
+          ${ "{:.2f}".format(self_empl_gross_sales_monthly_amount - float(sum([ expense.total(times_per_year=12) for expense in al_expense_lists ]))) }
+          % else:
+          0.00
+          % endif
+      - "users1_income_child_support_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['child support'], times_per_year=12)) }
+      - "users1_income_investments_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['investments'], times_per_year=12)) }
+      - "users1_income_unemployment_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['unemployment income'], times_per_year=12)) } 
+      - "users1_income_other_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['other'], times_per_year=12)) }
+      - "users1_income_monthly_total": |
+          % if employed and is_self_employed and has_schedule_c:
+          ${ "{:.2f}".format((other_incomes.total(times_per_year = 12)) + (jobs.total(times_per_year = 12)) + (float(self_employed_net_income/12))) }
+          % elif employed and is_self_employed and do_self_employment_worksheet:
+          ${ "{:.2f}".format(float(other_incomes.total(times_per_year = 12)) + float(jobs.total(times_per_year = 12)) + float(self_empl_gross_sales_monthly_amount)  - float(sum([ expense.total(times_per_year=12) for expense in al_expense_lists ]))) }
+          % else: 
+          ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12)) }
+          % endif
+
+      - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "wages", times_per_year = 12)) }
+      - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "self employment", times_per_year = 12)) }
+      - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "unemployment", times_per_year = 12)) }
+      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "child support", times_per_year = 12)) }
+      - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "public benefits", times_per_year = 12)) }
+      - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "investments", times_per_year = 12)) }
+      - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "other", times_per_year = 12)) }
+      - "household_others_income_monthly_total": ${ "{:.2f}".format(household_others_income.total(times_per_year = 12)) }
+
+        
+
+      - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
+      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
+      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
+      - "users1_expenses_fuel_monthly_amount": ${ currency(users1_expenses_fuel_monthly_amount) }
+      - "users1_expenses_phone_monthly_amount": ${ currency(users1_expenses_phone_monthly_amount) } 
+      - "users1_expenses_clothes_monthly_amount": ${ currency(users1_expenses_clothes_monthly_amount) }
+      - "users1_expenses_medical_monthly_amount": ${ currency(users1_expenses_medical_monthly_amount) }
+      - "users1_expenses_property_tax_monthly_amount": ${ currency(users1_expenses_property_tax_monthly_amount) }
       - "users1_expenses_all_insurance_monthly_amount": ${ currency(users1_expenses_all_insurance_monthly_amount) }
-      - "users1_income_other_monthly_amount": ${ currency(users1_income_other_monthly_amount) }
-      - "household_others_income_other_monthly_amount": ${ currency(household_others_income_other_monthly_amount) }
+      - "users1_expenses_child_support_monthly_amount": ${ currency(users1_expenses_child_support_monthly_amount) }
+      - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
       - "users1_expenses_other_1_monthly_amount": ${ currency(users1_expenses_other_1_monthly_amount) }
-      - "users1_income_monthly_total": ${ currency(users1_income_monthly_total) }
-      - "household_others_income_monthly_total": ${ currency(household_others_income_monthly_total) }
       - "users1_expenses_other_2_monthly_amount": ${ currency(users1_expenses_other_2_monthly_amount) }
       - "total_income_monthly_total": ${ currency(total_income_monthly_total) }
       - "users1_expenses_other_3_monthly_amount": ${ currency(users1_expenses_other_3_monthly_amount) }
@@ -2812,9 +2801,15 @@ attachment:
       - "users1_assets_other_4_market_value": ${ currency(users1_assets_other_4_market_value) }
       - "users1_assets_other_5_description": ${ users1_assets_other_5_description }
       - "users1_assets_other_5_market_value": ${ currency(users1_assets_other_5_market_value) }
-      - "household_others_1_employed_name": ${ household_others_1_employed_name }
-      - "household_others_1_employed_employer": ${ household_others_1_employed_employer }
-      - "household_others_1_employed_employer_address": ${ household_others_1_employed_employer_address }
+
+      
+      - "household_others_1_employed_name": |
+          ${ comma_and_list(member.name for member in household_others_income.matches(source='wages')) }
+      - "household_others_1_employed_employer": |
+          ${ comma_and_list(member.employer_name for member in household_others_income.matches(source='wages')) }
+      - "household_others_1_employed_employer_address": | 
+          ${ comma_and_list(member.employer_address_on_one_line for member in household_others_income.matches(source='wages')) }
+          
       - "household_others_2_employed_name": ${ household_others_2_employed_name }
       - "household_others_2_employed_employer": ${ household_others_2_employed_employer }
       - "household_others_2_employed_employer_address": ${ household_others_2_employed_employer_address }
