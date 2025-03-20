@@ -2100,13 +2100,17 @@ review:
     button: |
       **Size of your household**:
       ${ household_size }
-  - Edit: household_others.revisit
+      
+  - Edit: 
+      - household_others.revisit
     button: |
-      Edit info about other members of your household, or add or delete.
+      **Other household members**
+      
+      Edit, add or delete information about other household members.
+      
       % for member in household_others:
       * ${ member.name }
-      % endfor
-      
+      % endfor  
 
 
             
@@ -2177,10 +2181,7 @@ review:
     button: |
       **Employment income monthly amount**:
       ${ currency(users1_income_employment_monthly_amount) }
-  - Edit: household_others_income_employment_monthly_amount
-    button: |
-      **Employment income for others in your household monthly amount**:
-      ${ currency(household_others_income_employment_monthly_amount) }
+
   - Edit: users1_expenses_clothes_monthly_amount
     button: |
       **Clothes monthly amount**:
@@ -2189,10 +2190,7 @@ review:
     button: |
       **Self-employment income monthly amount**:
       ${ currency(users1_income_self_employment_monthly_amount) }
-  - Edit: household_others_income_self_employment_monthly_amount
-    button: |
-      **Self-employment income for others in your household monthly amount**:
-      ${ currency(household_others_income_self_employment_monthly_amount) }
+
   - Edit: users1_expenses_medical_monthly_amount
     button: |
       **Medical monthly amount**:
@@ -2201,18 +2199,12 @@ review:
     button: |
       **Investments income monthly amount**:
       ${ currency(users1_income_investments_monthly_amount) }
-  - Edit: household_others_income_investments_monthly_amount
-    button: |
-      **Household others income investments monthly amount**:
-      ${ currency(household_others_income_investments_monthly_amount) }
+
   - Edit: users1_expenses_child_support_monthly_amount
     button: |
       **Users1 expenses child support monthly amount**:
       ${ currency(users1_expenses_child_support_monthly_amount) }
-  - Edit: household_others_income_unemployment_monthly_amount
-    button: |
-      **Household others income unemployment monthly amount**:
-      ${ currency(household_others_income_unemployment_monthly_amount) }
+
   - Edit: users1_income_unemployment_monthly_amount
     button: |
       **Users1 income unemployment monthly amount**:
@@ -2225,10 +2217,7 @@ review:
     button: |
       **Users1 income child support monthly amount**:
       ${ currency(users1_income_child_support_monthly_amount) }
-  - Edit: household_others_income_child_support_monthly_amount
-    button: |
-      **Household others income child support monthly amount**:
-      ${ currency(household_others_income_child_support_monthly_amount) }
+
   - Edit: users1_expenses_property_tax_monthly_amount
     button: |
       **Users1 expenses property tax monthly amount**:
@@ -2237,10 +2226,7 @@ review:
     button: |
       **Users1 benefits monthly amount**:
       ${ currency(users1_benefits_monthly_amount) }
-  - Edit: household_others_benefits_monthly_amount
-    button: |
-      **Household others benefits monthly amount**:
-      ${ currency(household_others_benefits_monthly_amount) }
+
   - Edit: users1_expenses_all_insurance_monthly_amount
     button: |
       **Users1 expenses all insurance monthly amount**:
@@ -2249,10 +2235,7 @@ review:
     button: |
       **Users1 income other monthly amount**:
       ${ currency(users1_income_other_monthly_amount) }
-  - Edit: household_others_income_other_monthly_amount
-    button: |
-      **Household others income other monthly amount**:
-      ${ currency(household_others_income_other_monthly_amount) }
+
   - Edit: users1_expenses_other_1_monthly_amount
     button: |
       **Users1 expenses other 1 monthly amount**:
@@ -2261,10 +2244,7 @@ review:
     button: |
       **Users1 income monthly total**:
       ${ currency(users1_income_monthly_total) }
-  - Edit: household_others_income_monthly_total
-    button: |
-      **Household others income monthly total**:
-      ${ currency(household_others_income_monthly_total) }
+
   - Edit: users1_expenses_other_2_monthly_amount
     button: |
       **Users1 expenses other 2 monthly amount**:
@@ -2480,42 +2460,7 @@ review:
     button: |
       **Users1 assets other 5 market value**:
       ${ currency(users1_assets_other_5_market_value) }
-  - Edit: household_others_1_employed_name
-    button: |
-      **Name of other household member who is employed**:
-      ${ household_others_1_employed_name }
-  - Edit: household_others_1_employed_employer
-    button: |
-      **Other household member's employer**:
-      ${ household_others_1_employed_employer }
-  - Edit: household_others_1_employed_employer_address
-    button: |
-      **Other household member's employer address**:
-      ${ household_others_1_employed_employer_address }
-  - Edit: household_others_2_employed_name
-    button: |
-      **Household others 2 employed name**:
-      ${ household_others_2_employed_name }
-  - Edit: household_others_2_employed_employer
-    button: |
-      **Household others 2 employed employer**:
-      ${ household_others_2_employed_employer }
-  - Edit: household_others_2_employed_employer_address
-    button: |
-      **Household others 2 employed employer address**:
-      ${ household_others_2_employed_employer_address }
-  - Edit: household_others_3_employed_name
-    button: |
-      **Household others 3 employed name**:
-      ${ household_others_3_employed_name }
-  - Edit: household_others_3_employed_employer
-    button: |
-      **Household others 3 employed employer**:
-      ${ household_others_3_employed_employer }
-  - Edit: household_others_3_employed_employer_address
-    button: |
-      **Household others 3 employed employer address**:
-      ${ household_others_3_employed_employer_address }
+
 
 ---
 continue button field: users.revisit
@@ -2555,7 +2500,7 @@ confirm: True
 ---
 continue button field: household_others.revisit
 question: |
-  Edit information about your other household members
+  Edit, add or delete info about other household members
 subquestion: |
   ${ household_others.table }
 
@@ -2566,8 +2511,12 @@ rows: household_others
 columns:
   - Name: |
       row_item.name.full() if defined("row_item.name.first") else ""
+  - Gets income: |
+      "Yes" if row_item.income.total(times_per_year=12) > 0 else "No"
 edit:
   - name.first
+  - revisit
+  - income.revisit
 confirm: True
 ---
 continue button field: household_others[i].income.revisit
@@ -2586,14 +2535,14 @@ rows: household_others[i].income
 columns:
   - Income per month: |
       currency(row_item.total(times_per_year=12))
-  - Employer name: |
+  - Source: |
+      row_item.source if defined("row_item.source") else ""
+  - Employer name (if applicable): |
       row_item.employer_name if defined("row_item.employer_name") else ""
   - Employer address: |
       row_item.employer_address_on_one_line if defined("row_item.employer_address_on_one_line") else ""
 edit:
   - value
-  - employer_name
-  - employer_address_on_one_line
   - household_others_income.gathered
 confirm: True  
 ---
