@@ -18,6 +18,14 @@ objects:
   - jobs[i].to_add: ALItemizedValueDict.using(complete_attribute="complete", there_are_any=True)
 ---
 objects:
+  - household_others[i].income: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
+---
+id: household_others complete
+code: |
+  household_others[i].income.gather()
+  household_others[i].complete = True
+---
+objects:
   - all_courts: ALCourtLoader.using(file_name='docassemble.VTSharedYMLFile:data/sources/courts_list_full.xlsx')
 ---
 code: |
@@ -169,7 +177,7 @@ code: |
   # Set the allowed courts for this interview
   allowed_courts = []
 
-  Intro_screen
+  intro_screen
   # Below sets the user_role and user_ask_role by asking a question.
   # You can set user_ask_role directly instead to either 'plaintiff' or 'defendant' 
   nav.set_section('about_you')
@@ -254,7 +262,6 @@ comment: |
 mandatory: True
 code: |
   al_intro_screen
-  financial_disclosure_intro
   interview_order_financial_disclosure
   nav.set_section("review_financial_disclosure")
   financial_disclosure_preview_question
@@ -269,32 +276,10 @@ code: |
   )
   financial_disclosure_download
 ---
-id: Financial_Disclosure
-continue button field: financial_disclosure_intro
-question: |
-  Financial Disclosure - form 100-00127
-subquestion: |
-  This interview will help you complete a financial disclosure form for family court.
-  
-  Before you get started, please gather:
-  
-  1. 
-  1. 
-  1. 
-  
-  When you are finished, you will need to:
-  
-  1. 
-  1.
-
-  If you are a _____________, you can use this interview to ____________.
-
-  Most people take about 30 minutes to complete this interview.
----
-id: Intro screen
+id: intro screen
 question: |
   Intro screen
-continue button field: Intro_screen
+continue button field: intro_screen
 ---
 id: users birthdate
 question: |
@@ -365,11 +350,16 @@ fields:
       household_others[i].name_fields()
 
   - note: |
-      Do they earn income from any of these sources? If so, enter the **monthly amount**.
+      Do they get any kinds of income or assistance? If so, enter the **monthly amount**.
+
+      If they don't have a steady income amount, look back over the last year to figure out their monthly income. If they only lived with you for part of the year, look back over that time to figure out their monthly income.
+
+      **Monthly income from:**
+      
   - "Public assistance?": household_others[i].public_benefits
     datatype: currency
     required: false
-  - "Wages?": household_others[i].wages
+  - "Wages (before taxes are taken out)?": household_others[i].wages
     datatype: currency
     required: false
   - "Self-employment?": household_others[i].selfemployment
@@ -381,18 +371,33 @@ fields:
   - "Child support?": household_others[i].child_support
     datatype: currency
     required: false
+  - "Income from investments or assets?": household_others[i].investments
+    datatype: currency
+    required: false
   - "Other -- including ....?": household_others[i].other
     datatype: currency
     required: false
 ---
 id: household recap
 question: |
-  Your household
+  Your household and their income
 subquestion: |
   % for member in household_others:
   Name: ${ member.name }
   
-  - Public benefits each month: ${ member.public_benefits }
+  - Public assistance each month: ${ member.public_benefits }
+
+  - Income from wages (before taxes are taken out): ${ member.wages }
+
+  - Self employment: ${ member.selfemployment }
+
+  - Unemployment: ${ member.unemployment }
+
+  - Child support: ${ member.child_support }
+
+  - Income from investments or assets: ${ member.investments }
+
+  - Other income: ${ member.other }
   
   % endfor
 continue button field: household_recap
@@ -1243,9 +1248,19 @@ edit:
 ---
 id: different monthly income
 question: |
-  Your income in the last 30 days
+  Household income in the last 30 days
+
+subquestion: |
+  From what you have told us, your personal monthly income over the last year is:
+
+  ${ jobs.total }
+
+  Your household monthly income over the last year is:
+
+  ADD IT UP
+  
 fields:
-  - "Is your income in the last 30 days significantly different from the past year?": users1_income_very_different_30_days_yes
+  - "Is your household income in the last 30 days significantly different from the past year?": users1_income_very_different_30_days_yes
     datatype: yesnoradio
   - "Your current monthly income": users1_income_very_different_30_days_amount
     datatype: currency
@@ -1259,7 +1274,6 @@ fields:
     input type: area
     maxlength: 360
     show if: users1_income_very_different_30_days_yes
----
 ---
 ############################# EXPENSES #############################
 ---
