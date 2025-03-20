@@ -2016,48 +2016,13 @@ question: |
 review:
   - Edit: users.revisit
     button: |
-      **Users**
+      **About you**
+      
+      Edit your birthdate, address, phone and email.
 
       % for item in users:
         * ${ item }
       % endfor
-  - Edit: household_others_1_name
-    button: |
-      **Household other member 1 name**:
-      ${ household_others[0].name }
-  - Edit: household_others_2_name
-    button: |
-      **Household other member 2 name**:
-      ${ household_others_2_name }
-  - Edit: Text17
-    button: |
-      **Text17**:
-      ${ Text17 }
-  - Edit: household_others_3_name
-    button: |
-      **Household other member 3 name**:
-      ${ household_others_3_name }
-  - Edit: household_others_4_name
-    button: |
-      **Household other member 4 name**:
-      ${ household_others_4_name }
-  - Edit: household_others_5_name
-    button: |
-      **Household other member 5 name**:
-      ${ household_others_5_name }
-  - Edit: household_others_6_name
-    button: |
-      **Household other member 6 name**:
-      ${ household_others_6_name }
-
-  - Edit: household_size
-    button: |
-      **Size of your household**:
-      ${ household_size }
-
-
-
-
   - Edit: 
       - employed
     button: |
@@ -2079,7 +2044,7 @@ review:
       
       % endif
       % if jobs.number_gathered() > 1:
-      jobs. Or add or delete a job.:
+      jobs. Or add or delete a job.
       
       % endif
       % for item in jobs:
@@ -2093,9 +2058,9 @@ review:
 
     button: |
       % if jobs[0].is_self_employed:
-      - Edit employer name and address: Self employed
+      **Edit employer name and address:** Self employed
       % else:
-      - Edit employer name and address: ${ jobs[0].employer.name.first }
+      **Edit employer name and address:** ${ jobs[0].employer.name.first }
       % endif
       
   - Edit: 
@@ -2104,9 +2069,9 @@ review:
 
     button: |
       % if jobs[1].is_self_employed:
-      - Edit employer name and address: Self employed
+      **Edit employer name and address:** Self employed
       % else:
-      - Edit employer name and address: ${ jobs[1].employer.name.first }
+      **Edit employer name and address:** ${ jobs[1].employer.name.first }
       % endif
 
   - Edit: 
@@ -2115,9 +2080,9 @@ review:
 
     button: |
       % if jobs[2].is_self_employed:
-      - Edit employer name and address: Self employed
+      **Edit employer name and address:** Self employed
       % else:
-      - Edit employer name and address: ${ jobs[2].employer.name.first }
+      **Edit employer name and address:** ${ jobs[2].employer.name.first }
       % endif
 
   - Edit: 
@@ -2126,12 +2091,22 @@ review:
 
     button: |
       % if jobs[3].is_self_employed:
-      - Edit employer name and address: Self employed
+      **Edit employer name and address:** Self employed
       % else:
-      - Edit employer name and address: ${ jobs[3].employer.name.first }
+      **Edit employer name and address:** ${ jobs[3].employer.name.first }
       % endif
       
-
+  - Edit: household_size
+    button: |
+      **Size of your household**:
+      ${ household_size }
+  - Edit: household_others.revisit
+    button: |
+      Edit info about other members of your household, or add or delete.
+      % for member in household_others:
+      * ${ member.name }
+      % endfor
+      
 
 
             
@@ -2141,33 +2116,33 @@ review:
       ${ word(yesno(users1_income_very_different_30_days_yes)) }
   - Edit: users1_income_very_different_30_days_amount
     button: |
-      **Current income**:
+      **Current income during last 30 days**:
       ${ currency(users1_income_very_different_30_days_amount) }
   - Edit: household_income_very_different_30_days_amount
     button: |
-      **Current household income very different 30 days amount**:
+      **Current household income during last 30 days**:
       ${ currency(household_income_very_different_30_days_amount) }
   - Edit: users1_income_very_different_30_days_why
     button: |
-      **Why has your income been significantly different?**:
+      **Why your income has been significantly different**:
       ${ single_paragraph(users1_income_very_different_30_days_why) }
 
-
-      
 
 
   - Edit: trial_court_division
     button: |
-      **Trial court**
+      **Court where you file this form:**
   
       % if defined("trial_court_division"):
       ${ trial_court_division } Division
+      % endif
       
+      % if defined("trial_court.address.county"):
       ${ trial_court.address.county } County
       % endif
   - Edit: docket_number
     button: |
-      **Docket number**:
+      **Case number**:
       ${ docket_number }
 
   - Edit: signature_date
@@ -2542,15 +2517,10 @@ review:
       **Household others 3 employed employer address**:
       ${ household_others_3_employed_employer_address }
 
-
-  - Edit: Address_3
-    button: |
-      **Address**:
-      ${ Address_3 }
 ---
 continue button field: users.revisit
 question: |
-  Edit users
+  Edit information about you
 subquestion: |
   ${ users.table }
 
@@ -2582,7 +2552,53 @@ edit:
   - email
   - birthdate
 confirm: True
+---
+continue button field: household_others.revisit
+question: |
+  Edit information about your other household members
+subquestion: |
+  ${ household_others.table }
 
+  ${ household_others.add_action() }
+---
+table: household_others.table
+rows: household_others
+columns:
+  - Name: |
+      row_item.name.full() if defined("row_item.name.first") else ""
+edit:
+  - name.first
+confirm: True
+---
+continue button field: household_others[i].income.revisit
+question: |
+  Edit info about the income of ${ household_others[i].name }
+subquestion: |
+  ${ household_others[i].income.table }
+
+  ${ household_others[i].income.add_action() }
+
+---
+generic object: ALPeopleList
+id: household_others income table
+table: household_others[i].income.table
+rows: household_others[i].income
+columns:
+  - Income per month: |
+      currency(row_item.total(times_per_year=12))
+  - Employer name: |
+      row_item.employer_name if defined("row_item.employer_name") else ""
+  - Employer address: |
+      row_item.employer_address_on_one_line if defined("row_item.employer_address_on_one_line") else ""
+edit:
+  - value
+  - employer_name
+  - employer_address_on_one_line
+  - household_others_income.gathered
+confirm: True  
+---
+
+##################### DOWNLOAD SCREEN ##########################
 ---
 id: download financial_disclosure
 event: financial_disclosure_download
@@ -2816,6 +2832,7 @@ attachment:
       - "household_others_3_employed_name": ${ household_others_3_employed_name }
       - "household_others_3_employed_employer": ${ household_others_3_employed_employer }
       - "household_others_3_employed_employer_address": ${ household_others_3_employed_employer_address }
+        
       - "users1_income_very_different_30_days_amount": ${ currency(users1_income_very_different_30_days_amount) }
       - "household_income_very_different_30_days_amount": ${ currency(household_income_very_different_30_days_amount) }
       - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
