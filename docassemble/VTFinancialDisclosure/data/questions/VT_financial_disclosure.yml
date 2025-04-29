@@ -175,9 +175,8 @@ code: |
   # Set the allowed courts for this interview
   allowed_courts = []
 
-  intro_screen
+  acknowledged_information_use
   
-
   nav.set_section('case_info')
   trial_court_division
   if trial_court_division == "Environmental":
@@ -292,6 +291,15 @@ subquestion: |
   
   [FILE big_logo, 30%, Legal Services Vermont]
 
+  Tap Next to continue.
+
+continue button field: al_intro_screen
+---
+id: intro screen
+question: |
+  Intro screen
+subquestion: |
+  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 fields:
   - To continue, please accept our [terms of use](https://vtlawhelp.org/vtcourtforms/terms-of-use).: acknowledged_information_use
     datatype: checkboxes
@@ -302,12 +310,6 @@ fields:
     validation messages:
       minlength: |
         You cannot continue unless you agree to the terms of use.        
-continue button field: al_intro_screen
----
-id: intro screen
-question: |
-  Intro screen
-continue button field: intro_screen
 ---
 ########################  CASE INFO  ########################
 ---
@@ -1083,13 +1085,13 @@ code: |
 id: household_others income
 variable name: household_others[i].income.terms_ordered
 data: !!omap
-  - public benefits: "Public assistance"
-  - wages: "Wages (before taxes are taken out)"
+  - public benefits: "Public assistance (including Reach UP, SSI, General Assistance, etc. -- but not SSDI)"
+  - wages: "Wages (amount before taxes are taken out)"
   - self employment: "Self employment"
   - unemployment: "Unemployment"
   - child support: "Child support income"
   - investments: "Income from investments"
-  - other: "Other income"
+  - other: "Other income (including SSDI and Social Security)"
 ---
 id: household income ordered object for checkboxes
 objects:
@@ -1199,7 +1201,7 @@ subquestion: |
   
   - Public assistance: ${ currency(member.income.total(source = "public benefits", times_per_year = 12)) }
   
-  - Wages: ${ currency(member.income.total(source = "wages", times_per_year = 12)) }
+  - Wages (amount before taxes are taken out): ${ currency(member.income.total(source = "wages", times_per_year = 12)) }
   
   - Self employment: ${ currency(member.income.total(source = "self employment", times_per_year = 12)) }
   
@@ -1209,7 +1211,7 @@ subquestion: |
   
   - Investment income: ${ currency(member.income.total(source = "investments", times_per_year = 12)) }
   
-  - Other income: ${ currency(member.income.total(source = "other", times_per_year = 12)) }
+  - Other income (including SSDI and Social Security): ${ currency(member.income.total(source = "other", times_per_year = 12)) }
 
   % endfor
 continue button field: household_recap
@@ -1291,6 +1293,7 @@ fields:
     input type: radio
     code: |
       times_per_year_list
+    default: 12
   - Amount of income: other_incomes[i].value
     datatype: currency
   - note: |
@@ -1353,24 +1356,45 @@ question: |
 
 subquestion: |
   From what you have told us, your personal monthly income is:
-  Need to add up all incomes here, not just jobs.  ${ currency(jobs.total(times_per_year = 12)) }
+  % if defined("jobs"):
+  ${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12)) }
+  % elif other_incomes.number_gathered() > 0:
+  ${ currency(other_incomes.total(times_per_year=12)) }
+  % else:
+  ${ currency(0) } 
+  % endif
 
-  The monthly income of other household members is: ${ currency(household_others_income.total(times_per_year = 12)) }
+  % if household_others.number_gathered() > 0:
+  The monthly income of other household members is:
+  % if defined("household_others_income"):
+  ${ currency(household_others_income.total(times_per_year = 12)) }
+  % else:
+  ${ currency(0) }
+  % endif
+  % endif
 
-  For a total of: ${ currency(jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) } each month
-  
+  For a total of:
+  % if defined("jobs"):
+  **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  % elif other_incomes.number_gathered() > 0:
+  **${ currency(other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  % else:
+  ${ currency(0) }
+  % endif
+  **each month**
+
 fields:
-  - "Is your household income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days_yes
+  - "Is your total income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days_yes
     datatype: yesnoradio
-  - "What is your current monthly income?": users1_income_very_different_30_days_amount
+  - "What is your current personal monthly income?": users1_income_very_different_30_days_amount
     datatype: currency
     min: 0
     show if: users1_income_very_different_30_days_yes
-  - "What is your current household monthly income?": household_income_very_different_30_days_amount
+  - "What is the current monthly income of other household members?": household_income_very_different_30_days_amount
     datatype: currency
     min: 0
     show if: users1_income_very_different_30_days_yes
-  - "Why has your income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
+  - "Why has this income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
     input type: area
     maxlength: 360
     show if: users1_income_very_different_30_days_yes
