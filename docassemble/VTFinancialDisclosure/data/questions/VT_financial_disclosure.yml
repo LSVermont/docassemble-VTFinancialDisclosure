@@ -218,9 +218,7 @@ code: |
   household_others_income.gathered
   household_size
   household_recap
-  users1_income_very_different_30_days_yes
-
-
+  users1_income_very_different_30_days
 
   nav.set_section('your_expenses')
   set_progress(50)
@@ -1384,20 +1382,20 @@ subquestion: |
   **each month**
 
 fields:
-  - "Is your total income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days_yes
+  - "Is your total income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days
     datatype: yesnoradio
   - "What is your current personal monthly income?": users1_income_very_different_30_days_amount
     datatype: currency
     min: 0
-    show if: users1_income_very_different_30_days_yes
+    show if: users1_income_very_different_30_days
   - "What is the current monthly income of other household members?": household_income_very_different_30_days_amount
     datatype: currency
     min: 0
-    show if: users1_income_very_different_30_days_yes
+    show if: users1_income_very_different_30_days
   - "Why has this income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
     input type: area
     maxlength: 360
-    show if: users1_income_very_different_30_days_yes
+    show if: users1_income_very_different_30_days
 ---
 ############################# EXPENSES #############################
 ---
@@ -2181,39 +2179,45 @@ review:
       
       % for member in household_others:
       * ${ member.name }
-      % endfor  
-
-
+      % endfor
             
-  - Edit: users1_income_very_different_30_days_yes
+  - Edit: 
+      - users1_income_very_different_30_days
+      - follow up:
+        - users1_income_very_different_30_days_amount
+        - household_income_very_different_30_days_amount
+        - users1_income_very_different_30_days_why
     button: |
-      **Your income has been significantly different than usual in the last 30 days**:
-      ${ word(yesno(users1_income_very_different_30_days_yes)) }
-  - Edit: users1_income_very_different_30_days_amount
+      **Your income has been significantly different than usual in the last 30 days**: ${ word(yesno(users1_income_very_different_30_days)) }
+
+  - Edit: 
+      - users1_income_very_different_30_days_amount
+      - household_income_very_different_30_days_amount
+      - users1_income_very_different_30_days_why
     button: |
-      **Current income during last 30 days**:
-      ${ currency(users1_income_very_different_30_days_amount) }
-  - Edit: household_income_very_different_30_days_amount
-    button: |
-      **Current household income during last 30 days**:
-      ${ currency(household_income_very_different_30_days_amount) }
-  - Edit: users1_income_very_different_30_days_why
-    button: |
-      **Why your income has been significantly different**:
+      % if users1_income_very_different_30_days:
+      **Details on different income**
+
+      Why the income has been significantly different:
       ${ single_paragraph(users1_income_very_different_30_days_why) }
+
+      Your current income during last 30 days:
+      ${ currency(users1_income_very_different_30_days_amount) }
+
+      Other household members current income during last 30 days:
+      ${ currency(household_income_very_different_30_days_amount) }
+      % endif      
 
 
 
   - Edit: trial_court_division
     button: |
       **Court where you file this form:**
-  
       % if defined("trial_court_division"):
       ${ trial_court_division } Division
-      % endif
-      
+      % endif      
       % if defined("trial_court.address.county"):
-      ${ trial_court.address.county } County
+      in ${ trial_court.address.county } County
       % endif
   - Edit: docket_number
     button: |
@@ -2426,9 +2430,19 @@ attachment:
 
       - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
       - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
-      - "household_others_receive_benefits_yes": ${ household_others_receive_benefits }
-      - "household_others_receive_benefits_no": ${ not household_others_receive_benefits }
-
+      - "household_others_receive_benefits_yes": |
+          % if household_others_income.total(source = "public benefits") > 0:
+          ${ True }
+          % else:
+          ${ False }
+          % endif
+      - "household_others_receive_benefits_no": |
+          % if household_others_income.total(source = "public benefits") > 0:
+          ${ False }
+          % else:
+          ${ True }
+          % endif
+          
       - "users1_benefits_monthly_amount": ${ "{:.2f}".format(public_benefits.total(times_per_year=12)) }
       - "users1_income_employment_monthly_amount": ${ "{:.2f}".format(jobs.total(source=['part time', 'full time', 'Tips', 'Commissions','Bonuses','Royalties'],times_per_year=12)) }
       - "users1_income_self_employment_monthly_amount": |
@@ -2454,8 +2468,9 @@ attachment:
       - "household_others_income_monthly_total": ${ "{:.2f}".format(household_others_income.total(times_per_year = 12)) }
 
       - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) }
-      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days_yes }
-      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days_yes }
+        
+      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
+      - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
 
       - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
       - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
@@ -2540,9 +2555,10 @@ attachment:
       - "household_others_3_employed_employer": ${ household_others_3_employed_employer }
       - "household_others_3_employed_employer_address": ${ household_others_3_employed_employer_address }
         
-      - "users1_income_very_different_30_days_amount": ${ currency(users1_income_very_different_30_days_amount) }
-      - "household_income_very_different_30_days_amount": ${ currency(household_income_very_different_30_days_amount) }
+      - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
+      - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
       - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
+        
       - "users1_signature": ${ users[0].signature_if_final(i) }
       - "signature_date": ${ signature_date }
       - "users1_mailing_address_line_one": ${ users[0].mailing_address.line_one() }
