@@ -175,9 +175,8 @@ code: |
   # Set the allowed courts for this interview
   allowed_courts = []
 
-  intro_screen
+  acknowledged_information_use
   
-
   nav.set_section('case_info')
   trial_court_division
   if trial_court_division == "Environmental":
@@ -219,9 +218,7 @@ code: |
   household_others_income.gathered
   household_size
   household_recap
-  users1_income_very_different_30_days_yes
-
-
+  users1_income_very_different_30_days
 
   nav.set_section('your_expenses')
   set_progress(50)
@@ -292,6 +289,15 @@ subquestion: |
   
   [FILE big_logo, 30%, Legal Services Vermont]
 
+  Tap Next to continue.
+
+continue button field: al_intro_screen
+---
+id: intro screen
+question: |
+  Intro screen
+subquestion: |
+  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 fields:
   - To continue, please accept our [terms of use](https://vtlawhelp.org/vtcourtforms/terms-of-use).: acknowledged_information_use
     datatype: checkboxes
@@ -302,12 +308,6 @@ fields:
     validation messages:
       minlength: |
         You cannot continue unless you agree to the terms of use.        
-continue button field: al_intro_screen
----
-id: intro screen
-question: |
-  Intro screen
-continue button field: intro_screen
 ---
 ########################  CASE INFO  ########################
 ---
@@ -1083,13 +1083,13 @@ code: |
 id: household_others income
 variable name: household_others[i].income.terms_ordered
 data: !!omap
-  - public benefits: "Public assistance"
-  - wages: "Wages (before taxes are taken out)"
+  - public benefits: "Public assistance (including Reach UP, SSI, General Assistance, etc. -- but not SSDI)"
+  - wages: "Wages (amount before taxes are taken out)"
   - self employment: "Self employment"
   - unemployment: "Unemployment"
   - child support: "Child support income"
   - investments: "Income from investments"
-  - other: "Other income"
+  - other: "Other income (including SSDI and Social Security)"
 ---
 id: household income ordered object for checkboxes
 objects:
@@ -1199,7 +1199,7 @@ subquestion: |
   
   - Public assistance: ${ currency(member.income.total(source = "public benefits", times_per_year = 12)) }
   
-  - Wages: ${ currency(member.income.total(source = "wages", times_per_year = 12)) }
+  - Wages (amount before taxes are taken out): ${ currency(member.income.total(source = "wages", times_per_year = 12)) }
   
   - Self employment: ${ currency(member.income.total(source = "self employment", times_per_year = 12)) }
   
@@ -1209,7 +1209,7 @@ subquestion: |
   
   - Investment income: ${ currency(member.income.total(source = "investments", times_per_year = 12)) }
   
-  - Other income: ${ currency(member.income.total(source = "other", times_per_year = 12)) }
+  - Other income (including SSDI and Social Security): ${ currency(member.income.total(source = "other", times_per_year = 12)) }
 
   % endfor
 continue button field: household_recap
@@ -1291,6 +1291,7 @@ fields:
     input type: radio
     code: |
       times_per_year_list
+    default: 12
   - Amount of income: other_incomes[i].value
     datatype: currency
   - note: |
@@ -1353,27 +1354,48 @@ question: |
 
 subquestion: |
   From what you have told us, your personal monthly income is:
-  Need to add up all incomes here, not just jobs.  ${ currency(jobs.total(times_per_year = 12)) }
+  % if defined("jobs"):
+  ${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12)) }
+  % elif other_incomes.number_gathered() > 0:
+  ${ currency(other_incomes.total(times_per_year=12)) }
+  % else:
+  ${ currency(0) } 
+  % endif
 
-  The monthly income of other household members is: ${ currency(household_others_income.total(times_per_year = 12)) }
+  % if household_others.number_gathered() > 0:
+  The monthly income of other household members is:
+  % if defined("household_others_income"):
+  ${ currency(household_others_income.total(times_per_year = 12)) }
+  % else:
+  ${ currency(0) }
+  % endif
+  % endif
 
-  For a total of: ${ currency(jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) } each month
-  
+  For a total of:
+  % if defined("jobs"):
+  **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  % elif other_incomes.number_gathered() > 0:
+  **${ currency(other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  % else:
+  ${ currency(0) }
+  % endif
+  **each month**
+
 fields:
-  - "Is your household income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days_yes
+  - "Is your total income in the **last 30 days** significantly different from months in the past year?": users1_income_very_different_30_days
     datatype: yesnoradio
-  - "What is your current monthly income?": users1_income_very_different_30_days_amount
+  - "What is your current personal monthly income?": users1_income_very_different_30_days_amount
     datatype: currency
     min: 0
-    show if: users1_income_very_different_30_days_yes
-  - "What is your current household monthly income?": household_income_very_different_30_days_amount
+    show if: users1_income_very_different_30_days
+  - "What is the current monthly income of other household members?": household_income_very_different_30_days_amount
     datatype: currency
     min: 0
-    show if: users1_income_very_different_30_days_yes
-  - "Why has your income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
+    show if: users1_income_very_different_30_days
+  - "Why has this income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
     input type: area
     maxlength: 360
-    show if: users1_income_very_different_30_days_yes
+    show if: users1_income_very_different_30_days
 ---
 ############################# EXPENSES #############################
 ---
@@ -1422,7 +1444,9 @@ id: expenses types
 question: |
   What kind of expenses do you have?
 subquestion: |
-  Be sure to look back over the last 12 months. Maybe you didn't have the expense last month, but you had it earlier in the year.
+    Enter in the expenses for your entire household.
+    
+    Be sure to look back over the last 12 months. Maybe you didn't have the expense last month, but you had it earlier in the year.
 fields:
   - no label: x.selected_types
     datatype: checkboxes
@@ -2052,16 +2076,33 @@ review:
         * ${ item }
       % endfor
   - Edit: 
+      - public_benefits.revisit
+    button: |
+      **Your public assistance**
+      
+      % if public_benefits.number_gathered() > 0:
+      % for benefit in public_benefits:
+      % if benefit.source == "other":
+      * ${ benefit.display_name }
+      % else:
+      * ${ benefit.source }
+      % endif
+      % endfor
+      
+      % else:
+      - None
+      % endif
+  - Edit: 
       - employed
     button: |
-      **Employed**
+      **You are employed**
       
       - ${ word(yesno(employed)) }
 
   - Edit: 
       - review_jobs
     button: |
-      **Jobs**
+      **Your jobs**
 
       % if jobs.number_gathered() == 0:
       - None
@@ -2086,9 +2127,9 @@ review:
 
     button: |
       % if jobs[0].is_self_employed:
-      **Edit employer name and address:** Self employed
+      **Edit your employer name and address:** Self employed
       % else:
-      **Edit employer name and address:** ${ jobs[0].employer.name.first }
+      **Edit your employer name and address:** ${ jobs[0].employer.name.first }
       % endif
       
   - Edit: 
@@ -2138,39 +2179,45 @@ review:
       
       % for member in household_others:
       * ${ member.name }
-      % endfor  
-
-
+      % endfor
             
-  - Edit: users1_income_very_different_30_days_yes
+  - Edit: 
+      - users1_income_very_different_30_days
+      - follow up:
+        - users1_income_very_different_30_days_amount
+        - household_income_very_different_30_days_amount
+        - users1_income_very_different_30_days_why
     button: |
-      **Your income has been significantly different than usual in the last 30 days**:
-      ${ word(yesno(users1_income_very_different_30_days_yes)) }
-  - Edit: users1_income_very_different_30_days_amount
+      **Your income has been significantly different than usual in the last 30 days**: ${ word(yesno(users1_income_very_different_30_days)) }
+
+  - Edit: 
+      - users1_income_very_different_30_days_amount
+      - household_income_very_different_30_days_amount
+      - users1_income_very_different_30_days_why
     button: |
-      **Current income during last 30 days**:
-      ${ currency(users1_income_very_different_30_days_amount) }
-  - Edit: household_income_very_different_30_days_amount
-    button: |
-      **Current household income during last 30 days**:
-      ${ currency(household_income_very_different_30_days_amount) }
-  - Edit: users1_income_very_different_30_days_why
-    button: |
-      **Why your income has been significantly different**:
+      % if users1_income_very_different_30_days:
+      **Details on different income**
+
+      Why the income has been significantly different:
       ${ single_paragraph(users1_income_very_different_30_days_why) }
+
+      Your current income during last 30 days:
+      ${ currency(users1_income_very_different_30_days_amount) }
+
+      Other household members current income during last 30 days:
+      ${ currency(household_income_very_different_30_days_amount) }
+      % endif      
 
 
 
   - Edit: trial_court_division
     button: |
       **Court where you file this form:**
-  
       % if defined("trial_court_division"):
       ${ trial_court_division } Division
-      % endif
-      
+      % endif      
       % if defined("trial_court.address.county"):
-      ${ trial_court.address.county } County
+      in ${ trial_court.address.county } County
       % endif
   - Edit: docket_number
     button: |
@@ -2182,312 +2229,7 @@ review:
       **Date of signature**:
       ${ signature_date }
 
-
-
-      
-  - Edit: users1_expenses_rent_mortgage_monthly_amount
-    button: |
-      **Rent or mortgage monthly amount**:
-      ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
-  - Edit: users1_receives_benefits
-    button: |
-      **Do you get public assistance?**:
-      ${ word(yesno(users1_receives_benefits)) }
-  - Edit: users1_expenses_electric_monthly_amount
-    button: |
-      **Electric monthly amount**:
-      ${ currency(users1_expenses_electric_monthly_amount) }
-  - Edit: users1_expenses_fuel_monthly_amount
-    button: |
-      **Fuel monthly amount**:
-      ${ currency(users1_expenses_fuel_monthly_amount) }
-  - Edit: users1_expenses_phone_monthly_amount
-    button: |
-      **Phone monthly amount**:
-      ${ currency(users1_expenses_phone_monthly_amount) }
-  - Edit: users1_income_employment_monthly_amount
-    button: |
-      **Employment income monthly amount**:
-      ${ currency(users1_income_employment_monthly_amount) }
-
-  - Edit: users1_expenses_clothes_monthly_amount
-    button: |
-      **Clothes monthly amount**:
-      ${ currency(users1_expenses_clothes_monthly_amount) }
-  - Edit: users1_income_self_employment_monthly_amount
-    button: |
-      **Self-employment income monthly amount**:
-      ${ currency(users1_income_self_employment_monthly_amount) }
-
-  - Edit: users1_expenses_medical_monthly_amount
-    button: |
-      **Medical monthly amount**:
-      ${ currency(users1_expenses_medical_monthly_amount) }
-  - Edit: users1_income_investments_monthly_amount
-    button: |
-      **Investments income monthly amount**:
-      ${ currency(users1_income_investments_monthly_amount) }
-
-  - Edit: users1_expenses_child_support_monthly_amount
-    button: |
-      **Users1 expenses child support monthly amount**:
-      ${ currency(users1_expenses_child_support_monthly_amount) }
-
-  - Edit: users1_income_unemployment_monthly_amount
-    button: |
-      **Users1 income unemployment monthly amount**:
-      ${ currency(users1_income_unemployment_monthly_amount) }
-  - Edit: users1_expenses_auto_loan_monthly_amount
-    button: |
-      **Users1 expenses auto loan monthly amount**:
-      ${ currency(users1_expenses_auto_loan_monthly_amount) }
-  - Edit: users1_income_child_support_monthly_amount
-    button: |
-      **Users1 income child support monthly amount**:
-      ${ currency(users1_income_child_support_monthly_amount) }
-
-  - Edit: users1_expenses_property_tax_monthly_amount
-    button: |
-      **Users1 expenses property tax monthly amount**:
-      ${ currency(users1_expenses_property_tax_monthly_amount) }
-  - Edit: users1_benefits_monthly_amount
-    button: |
-      **Users1 benefits monthly amount**:
-      ${ currency(users1_benefits_monthly_amount) }
-
-  - Edit: users1_expenses_all_insurance_monthly_amount
-    button: |
-      **Users1 expenses all insurance monthly amount**:
-      ${ currency(users1_expenses_all_insurance_monthly_amount) }
-  - Edit: users1_income_other_monthly_amount
-    button: |
-      **Users1 income other monthly amount**:
-      ${ currency(users1_income_other_monthly_amount) }
-
-  - Edit: users1_expenses_other_1_monthly_amount
-    button: |
-      **Users1 expenses other 1 monthly amount**:
-      ${ currency(users1_expenses_other_1_monthly_amount) }
-  - Edit: users1_income_monthly_total
-    button: |
-      **Users1 income monthly total**:
-      ${ currency(users1_income_monthly_total) }
-
-  - Edit: users1_expenses_other_2_monthly_amount
-    button: |
-      **Users1 expenses other 2 monthly amount**:
-      ${ currency(users1_expenses_other_2_monthly_amount) }
-  - Edit: total_income_monthly_total
-    button: |
-      **Total income monthly total**:
-      ${ currency(total_income_monthly_total) }
-  - Edit: users1_expenses_other_3_monthly_amount
-    button: |
-      **Users1 expenses other 3 monthly amount**:
-      ${ currency(users1_expenses_other_3_monthly_amount) }
-      
-
-      
-  - Edit: users1_expenses_monthly_total
-    button: |
-      **Users1 expenses monthly total**:
-      ${ currency(users1_expenses_monthly_total) }
-  - Edit: users1_assets_cash_on_hand
-    button: |
-      **Users1 assets cash on hand**:
-      ${ currency(users1_assets_cash_on_hand) }
-  - Edit: users1_assets_vehicle_0_description
-    button: |
-      **Users1 assets vehicle 0 description**:
-      ${ users1_assets_vehicle_0_description }
-  - Edit: users1_assets_real_estate_0_description
-    button: |
-      **Users1 assets real estate 0 description**:
-      ${ users1_assets_real_estate_0_description }
-  - Edit: users1_assets_checking_accounts
-    button: |
-      **Users1 assets checking accounts**:
-      ${ currency(users1_assets_checking_accounts) }
-  - Edit: users1_assets_real_estate_0_market_value
-    button: |
-      **Users1 assets real estate 0 market value**:
-      ${ currency(users1_assets_real_estate_0_market_value) }
-  - Edit: users1_assets_vehicle_0_market_value
-    button: |
-      **Users1 assets vehicle 0 market value**:
-      ${ currency(users1_assets_vehicle_0_market_value) }
-  - Edit: users1_assets_savings_accounts
-    button: |
-      **Users1 assets savings accounts**:
-      ${ currency(users1_assets_savings_accounts) }
-  - Edit: users1_assets_real_estate_0_amount_owed
-    button: |
-      **Users1 assets real estate 0 amount owed**:
-      ${ currency(users1_assets_real_estate_0_amount_owed) }
-  - Edit: users1_assets_vehicle_0_amount_owed
-    button: |
-      **Users1 assets vehicle 0 amount owed**:
-      ${ currency(users1_assets_vehicle_0_amount_owed) }
-  - Edit: users1_assets_cash_total
-    button: |
-      **Bank assets total**:
-      ${ currency(users1_assets_cash_on_hand + users1_assets_checking_accounts + users1_assets_savings_accounts) }
-  - Edit: users1_assets_real_estate_0_net_value
-    button: |
-      **Users1 assets real estate 0 net value**:
-      ${ currency(users1_assets_real_estate_0_net_value) }
-  - Edit: users1_assets_vehicle_0_net_value
-    button: |
-      **Users1 assets vehicle 0 net value**:
-      ${ currency(users1_assets_vehicle_0_net_value) }
-  - Edit: assets
-    button: |
-      **Do you have any assets?**:
-      ${ word(yesno(assets)) }
-  - Edit: users1_assets_vehicle_1_description
-    button: |
-      **Users1 assets vehicle 1 description**:
-      ${ users1_assets_vehicle_1_description }
-  - Edit: users1_assets_vehicle_1_market_value
-    button: |
-      **Users1 assets vehicle 1 market value**:
-      ${ currency(users1_assets_vehicle_1_market_value) }
-  - Edit: users1_assets_vehicle_1_amount_owed
-    button: |
-      **Users1 assets vehicle 1 amount owed**:
-      ${ currency(users1_assets_vehicle_1_amount_owed) }
-  - Edit: users1_assets_vehicle_1_net_value
-    button: |
-      **Users1 assets vehicle 1 net value**:
-      ${ currency(users1_assets_vehicle_1_net_value) }
-  - Edit: users1_assets_vehicle_2_description
-    button: |
-      **Users1 assets vehicle 2 description**:
-      ${ users1_assets_vehicle_2_description }
-  - Edit: users1_assets_vehicle_2_market_value
-    button: |
-      **Users1 assets vehicle 2 market value**:
-      ${ currency(users1_assets_vehicle_2_market_value) }
-  - Edit: users1_assets_vehicle_2_amount_owed
-    button: |
-      **Users1 assets vehicle 2 amount owed**:
-      ${ currency(users1_assets_vehicle_2_amount_owed) }
-  - Edit: users1_assets_vehicle_2_net_value
-    button: |
-      **Users1 assets vehicle 2 net value**:
-      ${ currency(users1_assets_vehicle_2_net_value) }
-  - Edit: users1_assets_vehicle_3_description
-    button: |
-      **Users1 assets vehicle 3 description**:
-      ${ users1_assets_vehicle_3_description }
-  - Edit: users1_assets_vehicle_3_market_value
-    button: |
-      **Users1 assets vehicle 3 market value**:
-      ${ currency(users1_assets_vehicle_3_market_value) }
-  - Edit: users1_assets_vehicle_3_amount_owed
-    button: |
-      **Users1 assets vehicle 3 amount owed**:
-      ${ currency(users1_assets_vehicle_3_amount_owed) }
-  - Edit: users1_assets_vehicle_3_net_value
-    button: |
-      **Users1 assets vehicle 3 net value**:
-      ${ currency(users1_assets_vehicle_3_net_value) }
-  - Edit: users1_assets_vehicle_4_description
-    button: |
-      **Users1 assets vehicle 4 description**:
-      ${ users1_assets_vehicle_4_description }
-  - Edit: users1_assets_vehicle_4_market_value
-    button: |
-      **Users1 assets vehicle 4 market value**:
-      ${ currency(users1_assets_vehicle_4_market_value) }
-  - Edit: users1_assets_vehicle_4_amount_owed
-    button: |
-      **Users1 assets vehicle 4 amount owed**:
-      ${ currency(users1_assets_vehicle_4_amount_owed) }
-  - Edit: users1_assets_vehicle_4_net_value
-    button: |
-      **Users1 assets vehicle 4 net value**:
-      ${ currency(users1_assets_vehicle_4_net_value) }
-  - Edit: users1_assets_real_estate_1_description
-    button: |
-      **Users1 assets real estate 1 description**:
-      ${ users1_assets_real_estate_1_description }
-  - Edit: users1_assets_real_estate_1_market_value
-    button: |
-      **Users1 assets real estate 1 market value**:
-      ${ currency(users1_assets_real_estate_1_market_value) }
-  - Edit: users1_assets_real_estate_1_amount_owed
-    button: |
-      **Users1 assets real estate 1 amount owed**:
-      ${ currency(users1_assets_real_estate_1_amount_owed) }
-  - Edit: users1_assets_real_estate_1_net_value
-    button: |
-      **Users1 assets real estate 1 net value**:
-      ${ currency(users1_assets_real_estate_1_net_value) }
-  - Edit: users1_assets_real_estate_2_description
-    button: |
-      **Users1 assets real estate 2 description**:
-      ${ users1_assets_real_estate_2_description }
-  - Edit: users1_assets_real_estate_2_market_value
-    button: |
-      **Users1 assets real estate 2 market value**:
-      ${ currency(users1_assets_real_estate_2_market_value) }
-  - Edit: users1_assets_real_estate_2_amount_owed
-    button: |
-      **Users1 assets real estate 2 amount owed**:
-      ${ currency(users1_assets_real_estate_2_amount_owed) }
-  - Edit: users1_assets_real_estate_2_net_value
-    button: |
-      **Users1 assets real estate 2 net value**:
-      ${ currency(users1_assets_real_estate_2_net_value) }
-  - Edit: users1_assets_other_0_description
-    button: |
-      **Users1 assets other 0 description**:
-      ${ users1_assets_other_0_description }
-  - Edit: users1_assets_other_0_market_value
-    button: |
-      **Users1 assets other 0 market value**:
-      ${ currency(users1_assets_other_0_market_value) }
-  - Edit: users1_assets_other_1_description
-    button: |
-      **Users1 assets other 1 description**:
-      ${ users1_assets_other_1_description }
-  - Edit: users1_assets_other_1_market_value
-    button: |
-      **Users1 assets other 1 market value**:
-      ${ currency(users1_assets_other_1_market_value) }
-  - Edit: users1_assets_other_2_description
-    button: |
-      **Users1 assets other 2 description**:
-      ${ users1_assets_other_2_description }
-  - Edit: users1_assets_other_2_market_value
-    button: |
-      **Users1 assets other 2 market value**:
-      ${ currency(users1_assets_other_2_market_value) }
-  - Edit: users1_assets_other_3_description
-    button: |
-      **Users1 assets other 3 description**:
-      ${ users1_assets_other_3_description }
-  - Edit: users1_assets_other_3_market_value
-    button: |
-      **Users1 assets other 3 market value**:
-      ${ currency(users1_assets_other_3_market_value) }
-  - Edit: users1_assets_other_4_description
-    button: |
-      **Users1 assets other 4 description**:
-      ${ users1_assets_other_4_description }
-  - Edit: users1_assets_other_4_market_value
-    button: |
-      **Users1 assets other 4 market value**:
-      ${ currency(users1_assets_other_4_market_value) }
-  - Edit: users1_assets_other_5_description
-    button: |
-      **Users1 assets other 5 description**:
-      ${ users1_assets_other_5_description }
-  - Edit: users1_assets_other_5_market_value
-    button: |
-      **Users1 assets other 5 market value**:
-      ${ currency(users1_assets_other_5_market_value) }
+     
 
 
 ---
@@ -2510,9 +2252,9 @@ columns:
       row_item.address.block() if defined("row_item.address.address") else ""
   - Mailing address: |
       row_item.mailing_address.block() if defined("row_item.mailing_address.address") else ""
-  - Phone number: |
+  - Home or cell number: |
       row_item.phone_number if defined("row_item.phone_number") else ""
-  - Work phone: |
+  - Work or other phone: |
       row_item.work_phone_number if defined("row_item.wprk_phone_number") else ""
   - Email: |
       row_item.email if defined("row_item.email") else ""
@@ -2596,7 +2338,7 @@ subquestion: |
 
 progress: 100
 ---
-############################### ATTACHMENT ############################
+############################### ATTACHMENTS ############################
 ---
 # ALDocument objects specify the metadata for each template
 objects:
@@ -2688,31 +2430,33 @@ attachment:
 
       - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
       - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
-      - "household_others_receive_benefits_yes": ${ household_others_receive_benefits }
-      - "household_others_receive_benefits_no": ${ not household_others_receive_benefits }
-
-      - "users1_benefits_monthly_amount": ${ currency(users1_benefits_monthly_amount) }
+      - "household_others_receive_benefits_yes": |
+          % if household_others_income.total(source = "public benefits") > 0:
+          ${ True }
+          % else:
+          ${ False }
+          % endif
+      - "household_others_receive_benefits_no": |
+          % if household_others_income.total(source = "public benefits") > 0:
+          ${ False }
+          % else:
+          ${ True }
+          % endif
+          
+      - "users1_benefits_monthly_amount": ${ "{:.2f}".format(public_benefits.total(times_per_year=12)) }
       - "users1_income_employment_monthly_amount": ${ "{:.2f}".format(jobs.total(source=['part time', 'full time', 'Tips', 'Commissions','Bonuses','Royalties'],times_per_year=12)) }
       - "users1_income_self_employment_monthly_amount": |
-          % if employed and is_self_employed and has_schedule_c:
-          ${ "{:.2f}".format(self_employed_net_income/12) }
-          % elif employed and is_self_employed and do_self_employment_worksheet:
-          ${ "{:.2f}".format(self_empl_gross_sales_monthly_amount - float(sum([ expense.total(times_per_year=12) for expense in al_expense_lists ]))) }
+          % if jobs.total(times_per_year=12,source=["self employed"]) == 0:
+          ${ "{:.2f}".format(0) }
           % else:
-          0.00
+          ${ "{:.2f}".format(jobs.gross_total(source=["self employed"],times_per_year=12), 2) }
           % endif
       - "users1_income_child_support_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['child support'], times_per_year=12)) }
       - "users1_income_investments_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['investments'], times_per_year=12)) }
       - "users1_income_unemployment_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['unemployment income'], times_per_year=12)) } 
       - "users1_income_other_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['other'], times_per_year=12)) }
       - "users1_income_monthly_total": |
-          % if employed and is_self_employed and has_schedule_c:
-          ${ "{:.2f}".format((other_incomes.total(times_per_year = 12)) + (jobs.total(times_per_year = 12)) + (float(self_employed_net_income/12))) }
-          % elif employed and is_self_employed and do_self_employment_worksheet:
-          ${ "{:.2f}".format(float(other_incomes.total(times_per_year = 12)) + float(jobs.total(times_per_year = 12)) + float(self_empl_gross_sales_monthly_amount)  - float(sum([ expense.total(times_per_year=12) for expense in al_expense_lists ]))) }
-          % else: 
           ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12)) }
-          % endif
 
       - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "wages", times_per_year = 12)) }
       - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "self employment", times_per_year = 12)) }
@@ -2723,11 +2467,14 @@ attachment:
       - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "other", times_per_year = 12)) }
       - "household_others_income_monthly_total": ${ "{:.2f}".format(household_others_income.total(times_per_year = 12)) }
 
+      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) }
         
+      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
+      - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
 
       - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
       - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
-      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
+      - "users1_expenses_food_monthly_amount": ${ currency(users1_expenses_food_monthly_amount) }
       - "users1_expenses_fuel_monthly_amount": ${ currency(users1_expenses_fuel_monthly_amount) }
       - "users1_expenses_phone_monthly_amount": ${ currency(users1_expenses_phone_monthly_amount) } 
       - "users1_expenses_clothes_monthly_amount": ${ currency(users1_expenses_clothes_monthly_amount) }
@@ -2738,11 +2485,9 @@ attachment:
       - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
       - "users1_expenses_other_1_monthly_amount": ${ currency(users1_expenses_other_1_monthly_amount) }
       - "users1_expenses_other_2_monthly_amount": ${ currency(users1_expenses_other_2_monthly_amount) }
-      - "total_income_monthly_total": ${ currency(total_income_monthly_total) }
-      - "users1_expenses_other_3_monthly_amount": ${ currency(users1_expenses_other_3_monthly_amount) }
-      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days_yes }
-      - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days_yes }
+      - "users1_expenses_other_3_monthly_amount": ${ currency(users1_expenses_other_3_monthly_amount) }      
       - "users1_expenses_monthly_total": ${ currency(users1_expenses_monthly_total) }
+      
       - "users1_assets_vehicle_0_description": ${ users1_assets_vehicle_0_description }
       - "users1_assets_real_estate_0_description": ${ users1_assets_real_estate_0_description }
       - "users1_assets_real_estate_0_market_value": ${ currency(users1_assets_real_estate_0_market_value) }
@@ -2810,9 +2555,10 @@ attachment:
       - "household_others_3_employed_employer": ${ household_others_3_employed_employer }
       - "household_others_3_employed_employer_address": ${ household_others_3_employed_employer_address }
         
-      - "users1_income_very_different_30_days_amount": ${ currency(users1_income_very_different_30_days_amount) }
-      - "household_income_very_different_30_days_amount": ${ currency(household_income_very_different_30_days_amount) }
+      - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
+      - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
       - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
+        
       - "users1_signature": ${ users[0].signature_if_final(i) }
       - "signature_date": ${ signature_date }
       - "users1_mailing_address_line_one": ${ users[0].mailing_address.line_one() }
