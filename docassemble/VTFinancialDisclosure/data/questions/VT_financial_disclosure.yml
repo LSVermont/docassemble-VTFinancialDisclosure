@@ -2223,6 +2223,58 @@ review:
       % endfor
 
 
+  - note: |
+      ###Assets      
+      
+  - Edit: vehicles.revisit
+    button: |
+      **Vehicles**
+      
+      % for item in vehicles:
+      * ${ item.make } ${ item.model } ${ item.year }          
+      % endfor
+      % if vehicles.number_gathered() == 0:
+      - None
+      % endif
+  - Edit: 
+      - real_estate.revisit
+    button: |
+      **Real estate**
+
+      % for item in real_estate.complete_elements():
+      % if item.source == "primary residence":
+      * primary residence
+      % else:
+      * ${ item.display_name.lower() }
+      % endif
+      % endfor
+      % if real_estate.number_gathered() == 0:
+      - None
+      % endif
+
+  - Edit: bank_assets.revisit
+    button: |
+      **Bank accounts and cash**
+      
+      % for item in bank_assets:
+      - ${ item.display_name.lower() }
+      % endfor
+      % if bank_assets.number_gathered() == 0:
+      - None
+      % endif   
+      
+  - Edit: other_assets.revisit
+    button: |
+      **Other assets**
+
+      % for item in other_assets.complete_elements():
+        - ${ item.display_name.lower() }
+      % endfor
+
+      % if other_assets.number_gathered() == 0:
+      - None
+      % endif      
+      
 
       
 
@@ -2526,25 +2578,70 @@ attachment:
       - "users1_expenses_other_3_monthly_amount": ${ "{:.2f}".format(expenses.matches(source=['other'])[2].total(times_per_year=12)) } 
       - "users1_expenses_monthly_total": ${ "{:.2f}".format(expenses.total(times_per_year = 12)) } 
       
-      - "users1_assets_vehicle_0_description": ${ users1_assets_vehicle_0_description }
+
       - "users1_assets_real_estate_0_description": ${ users1_assets_real_estate_0_description }
       - "users1_assets_real_estate_0_market_value": ${ currency(users1_assets_real_estate_0_market_value) }
-      - "users1_assets_vehicle_0_market_value": ${ currency(users1_assets_vehicle_0_market_value) }
       - "users1_assets_real_estate_0_amount_owed": ${ currency(users1_assets_real_estate_0_amount_owed) }
-      - "users1_assets_vehicle_0_amount_owed": ${ currency(users1_assets_vehicle_0_amount_owed) }
-      - "users1_assets_cash_on_hand": ${ currency(users1_assets_cash_on_hand) }
-      - "users1_assets_checking_accounts": ${ currency(users1_assets_checking_accounts) }
-      - "users1_assets_savings_accounts": ${ currency(users1_assets_savings_accounts) }
-      - "users1_assets_cash_total": |
-          ${ currency(users1_assets_cash_on_hand + users1_assets_checking_accounts + users1_assets_savings_accounts) }
-      - "users1_assets_real_estate_0_net_value": ${ currency(users1_assets_real_estate_0_net_value) }
-      - "users1_assets_vehicle_0_net_value": ${ currency(users1_assets_vehicle_0_net_value) }
-      - "assets_yes": ${ assets }
-      - "assets_no": ${ not assets }
-      - "users1_assets_vehicle_1_description": ${ users1_assets_vehicle_1_description }
-      - "users1_assets_vehicle_1_market_value": ${ currency(users1_assets_vehicle_1_market_value) }
-      - "users1_assets_vehicle_1_amount_owed": ${ currency(users1_assets_vehicle_1_amount_owed) }
-      - "users1_assets_vehicle_1_net_value": ${ currency(users1_assets_vehicle_1_net_value) }
+
+
+      - "users1_assets_checking_accounts": |
+          % if bank_assets.market_value(source=["checking account"]) == 0:
+          ${ "{:.2f}".format(0) }
+          % else:
+          ${ "{:.2f}".format(bank_assets.market_value(source=["checking account"])) }
+          % endif            
+      - "users1_assets_cash_on_hand": |
+          % if bank_assets.market_value(source=["cash on hand"]) == 0:
+          ${ "{:.2f}".format(0) }
+          % else:
+          ${ "{:.2f}".format(bank_assets.market_value(source=["cash on hand"])) }
+          % endif      
+      - "users1_assets_savings_accounts": |
+          % if bank_assets.market_value(source=["savings account"]) == 0:
+          ${ "{:.2f}".format(0) }
+          % else:
+          ${ "{:.2f}".format(bank_assets.market_value(source=["savings account"])) }
+          % endif      
+      - "users1_assets_cash_total": ${ "{:.2f}".format(bank_assets.market_value()) }
+
+        
+      - "assets_yes": |
+          % if vehicles.number_gathered() > 1:
+          ${ "True" }
+          % elif real_estate.number_gathered() > 1:
+          ${ "True" }
+          % elif other_assets.number_gathered() > 0:
+          ${ "True" }
+          % endif
+      - "assets_no": |
+          % if vehicles.number_gathered() >= 2:
+          ${ "False" }
+          % elif real_estate.number_gathered() >= 2:
+          ${ "False" }
+          % elif other_assets.number_gathered() >= 1:
+          ${ "False" }
+          % else:
+          ${ "True" }
+          % endif
+
+      - "users1_assets_vehicle_0_amount_owed": ${ currency(vehicles[0].balance,symbol="") }
+      - "users1_assets_vehicle_0_description": |
+           ${ vehicles[0].make } ${ vehicles[0].model } ${ vehicles[0].year } 
+      - "users1_assets_vehicle_0_net_value": ${ currency(vehicles[0].market_value - vehicles[0].balance,symbol="") }
+      - "users1_assets_vehicle_0_market_value": ${ currency(vehicles[0].market_value,symbol="") }
+
+      - "users1_assets_vehicle_1_amount_owed": ${ currency(vehicles[1].balance,symbol="") }
+      - "users1_assets_vehicle_1_description": |
+           ${ vehicles[1].make } ${ vehicles[1].model } ${ vehicles[1].year } 
+      - "users1_assets_vehicle_1_net_value": ${ currency(vehicles[1].market_value - vehicles[0].balance,symbol="") }
+      - "users1_assets_vehicle_1_market_value": ${ currency(vehicles[1].market_value,symbol="") }
+
+      - "users1_assets_vehicle_2_amount_owed": ${ currency(vehicles[2].balance,symbol="") }
+      - "users1_assets_vehicle_2_description": |
+           ${ vehicles[2].make } ${ vehicles[2].model } ${ vehicles[2].year } 
+      - "users1_assets_vehicle_2_net_value": ${ currency(vehicles[2].market_value - vehicles[0].balance,symbol="") }
+      - "users1_assets_vehicle_2_market_value": ${ currency(vehicles[2].market_value,symbol="") }      
+
       - "users1_assets_vehicle_2_description": ${ users1_assets_vehicle_2_description }
       - "users1_assets_vehicle_2_market_value": ${ currency(users1_assets_vehicle_2_market_value) }
       - "users1_assets_vehicle_2_amount_owed": ${ currency(users1_assets_vehicle_2_amount_owed) }
