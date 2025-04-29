@@ -2661,19 +2661,17 @@ attachment:
       - "users1_assets_real_estate_2_net_value": ${ "{:.2f}".format(real_estate[2].market_value - real_estate[2].balance) }
 
 
-      
-      - "users1_assets_other_0_description": ${ users1_assets_other_0_description }
-      - "users1_assets_other_0_market_value": ${ currency(users1_assets_other_0_market_value) }
-      - "users1_assets_other_1_description": ${ users1_assets_other_1_description }
-      - "users1_assets_other_1_market_value": ${ currency(users1_assets_other_1_market_value) }
-      - "users1_assets_other_2_description": ${ users1_assets_other_2_description }
-      - "users1_assets_other_2_market_value": ${ currency(users1_assets_other_2_market_value) }
-      - "users1_assets_other_3_description": ${ users1_assets_other_3_description }
-      - "users1_assets_other_3_market_value": ${ currency(users1_assets_other_3_market_value) }
-      - "users1_assets_other_4_description": ${ users1_assets_other_4_description }
-      - "users1_assets_other_4_market_value": ${ currency(users1_assets_other_4_market_value) }
-      - "users1_assets_other_5_description": ${ users1_assets_other_5_description }
-      - "users1_assets_other_5_market_value": ${ currency(users1_assets_other_5_market_value) }
+      - "users1_assets_other_0_market_value": ${ currency(other_assets[0].market_value,symbol="") }
+      - "users1_assets_other_0_description": ${ other_assets[0].display_name }
+      - "users1_assets_other_1_market_value": ${ currency(other_assets[1].market_value,symbol="") }
+      - "users1_assets_other_1_description": ${ other_assets[1].display_name }
+      - "users1_assets_other_2_market_value": ${ currency(other_assets[2].market_value,symbol="") }
+      - "users1_assets_other_2_description": ${ other_assets[2].display_name }
+      - "users1_assets_other_3_market_value": ${ currency(other_assets[3].market_value,symbol="") }
+      - "users1_assets_other_3_description": ${ other_assets[3].display_name }
+      - "users1_assets_other_4_market_value": ${ currency(other_assets[4].market_value,symbol="") }
+      - "users1_assets_other_4_description": ${ other_assets[4].display_name }
+
 
       
       - "household_others_1_employed_name": |
