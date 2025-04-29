@@ -2209,6 +2209,22 @@ review:
       % endif      
 
 
+  - note: |
+      ###Expenses 
+  - Edit: expenses.revisit
+    button: |
+      **Expenses**:
+
+      % if expenses.number_gathered() == 0:
+      - None
+      % endif
+      % for item in expenses:
+      - ${ item.display_name.lower() }
+      % endfor
+
+
+
+      
 
   - Edit: trial_court_division
     button: |
@@ -2316,7 +2332,26 @@ edit:
   - household_others_income.gathered
 confirm: True  
 ---
+---
+continue button field: expenses.revisit
+question: |
+  Edit expenses
+subquestion: |
+  ${ expenses_table }
 
+  ${ expenses.add_action() }
+---
+table: expenses_table
+rows: expenses
+columns:
+  - Type: |
+      row_item.display_name.lower()
+  - Amount per month: |
+      currency(row_item.total(times_per_year=12))
+edit:
+  - source
+  - value
+---
 ##################### DOWNLOAD SCREEN ##########################
 ---
 id: download financial_disclosure
@@ -2472,21 +2507,24 @@ attachment:
       - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
       - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
 
-      - "users1_expenses_rent_mortgage_monthly_amount": ${ currency(users1_expenses_rent_mortgage_monthly_amount) }
-      - "users1_expenses_electric_monthly_amount": ${ currency(users1_expenses_electric_monthly_amount) }
-      - "users1_expenses_food_monthly_amount": ${ currency(users1_expenses_food_monthly_amount) }
-      - "users1_expenses_fuel_monthly_amount": ${ currency(users1_expenses_fuel_monthly_amount) }
-      - "users1_expenses_phone_monthly_amount": ${ currency(users1_expenses_phone_monthly_amount) } 
-      - "users1_expenses_clothes_monthly_amount": ${ currency(users1_expenses_clothes_monthly_amount) }
-      - "users1_expenses_medical_monthly_amount": ${ currency(users1_expenses_medical_monthly_amount) }
-      - "users1_expenses_property_tax_monthly_amount": ${ currency(users1_expenses_property_tax_monthly_amount) }
-      - "users1_expenses_all_insurance_monthly_amount": ${ currency(users1_expenses_all_insurance_monthly_amount) }
-      - "users1_expenses_child_support_monthly_amount": ${ currency(users1_expenses_child_support_monthly_amount) }
-      - "users1_expenses_auto_loan_monthly_amount": ${ currency(users1_expenses_auto_loan_monthly_amount) }
-      - "users1_expenses_other_1_monthly_amount": ${ currency(users1_expenses_other_1_monthly_amount) }
-      - "users1_expenses_other_2_monthly_amount": ${ currency(users1_expenses_other_2_monthly_amount) }
-      - "users1_expenses_other_3_monthly_amount": ${ currency(users1_expenses_other_3_monthly_amount) }      
-      - "users1_expenses_monthly_total": ${ currency(users1_expenses_monthly_total) }
+      - "users1_expenses_rent_mortgage_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["rent"],times_per_year=12) + expenses.total(source=["mortgage"],times_per_year=12)) } 
+      - "users1_expenses_electric_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["electric"],times_per_year=12)) } 
+      - "users1_expenses_food_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["food"],times_per_year=12)) } 
+      - "users1_expenses_fuel_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["fuel"],times_per_year=12)) } 
+      - "users1_expenses_phone_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["phone"],times_per_year=12)) }  
+      - "users1_expenses_clothes_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["clothing"],times_per_year=12)) } 
+      - "users1_expenses_medical_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["medical"],times_per_year=12)) } 
+      - "users1_expenses_property_tax_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["property tax"],times_per_year=12)) } 
+      - "users1_expenses_all_insurance_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["health insurance", "auto insurance", "other insurance"],times_per_year=12)) } 
+      - "users1_expenses_child_support_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["child support"],times_per_year=12)) } 
+      - "users1_expenses_auto_loan_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["auto loan"],times_per_year=12)) } 
+      - "users1_expenses_other_1_description": ${ expenses.matches(source=['other'])[0].display_name } 
+      - "users1_expenses_other_1_monthly_amount": ${ "{:.2f}".format(expenses.matches(source=['other'])[0].total(times_per_year=12)) } 
+      - "users1_expenses_other_2_description": ${ expenses.matches(source=['other'])[1].display_name } 
+      - "users1_expenses_other_2_monthly_amount": ${ "{:.2f}".format(expenses.matches(source=['other'])[1].total(times_per_year=12)) } 
+      - "users1_expenses_other_3_description": ${ expenses.matches(source=['other'])[2].display_name } 
+      - "users1_expenses_other_3_monthly_amount": ${ "{:.2f}".format(expenses.matches(source=['other'])[2].total(times_per_year=12)) } 
+      - "users1_expenses_monthly_total": ${ "{:.2f}".format(expenses.total(times_per_year = 12)) } 
       
       - "users1_assets_vehicle_0_description": ${ users1_assets_vehicle_0_description }
       - "users1_assets_real_estate_0_description": ${ users1_assets_real_estate_0_description }
