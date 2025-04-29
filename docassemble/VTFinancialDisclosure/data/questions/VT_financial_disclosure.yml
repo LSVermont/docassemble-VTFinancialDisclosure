@@ -2579,10 +2579,6 @@ attachment:
       - "users1_expenses_monthly_total": ${ "{:.2f}".format(expenses.total(times_per_year = 12)) } 
       
 
-      - "users1_assets_real_estate_0_description": ${ users1_assets_real_estate_0_description }
-      - "users1_assets_real_estate_0_market_value": ${ currency(users1_assets_real_estate_0_market_value) }
-      - "users1_assets_real_estate_0_amount_owed": ${ currency(users1_assets_real_estate_0_amount_owed) }
-
 
       - "users1_assets_checking_accounts": |
           % if bank_assets.market_value(source=["checking account"]) == 0:
@@ -2654,14 +2650,22 @@ attachment:
       - "users1_assets_vehicle_4_market_value": ${ currency(users1_assets_vehicle_4_market_value) }
       - "users1_assets_vehicle_4_amount_owed": ${ currency(users1_assets_vehicle_4_amount_owed) }
       - "users1_assets_vehicle_4_net_value": ${ currency(users1_assets_vehicle_4_net_value) }
-      - "users1_assets_real_estate_1_description": ${ users1_assets_real_estate_1_description }
-      - "users1_assets_real_estate_1_market_value": ${ currency(users1_assets_real_estate_1_market_value) }
-      - "users1_assets_real_estate_1_amount_owed": ${ currency(users1_assets_real_estate_1_amount_owed) }
-      - "users1_assets_real_estate_1_net_value": ${ currency(users1_assets_real_estate_1_net_value) }
-      - "users1_assets_real_estate_2_description": ${ users1_assets_real_estate_2_description }
-      - "users1_assets_real_estate_2_market_value": ${ currency(users1_assets_real_estate_2_market_value) }
-      - "users1_assets_real_estate_2_amount_owed": ${ currency(users1_assets_real_estate_2_amount_owed) }
-      - "users1_assets_real_estate_2_net_value": ${ currency(users1_assets_real_estate_2_net_value) }
+
+      - "users1_assets_real_estate_0_description": ${ real_estate[0].display_name }
+      - "users1_assets_real_estate_0_market_value": ${ "{:.2f}".format(real_estate[0].market_value) }
+      - "users1_assets_real_estate_0_amount_owed": ${ "{:.2f}".format(real_estate[0].balance) }
+      - "users1_assets_real_estate_0_net_value": ${ "{:.2f}".format(real_estate[0].market_value - real_estate[0].balance) }
+      - "users1_assets_real_estate_1_description": ${ real_estate[1].display_name }
+      - "users1_assets_real_estate_1_market_value": ${ "{:.2f}".format(real_estate[1].market_value) }
+      - "users1_assets_real_estate_1_amount_owed": ${ "{:.2f}".format(real_estate[1].balance) }
+      - "users1_assets_real_estate_1_net_value": ${ "{:.2f}".format(real_estate[1].market_value - real_estate[1].balance) }
+      - "users1_assets_real_estate_2_description": ${ real_estate[2].display_name }
+      - "users1_assets_real_estate_2_market_value": ${ "{:.2f}".format(real_estate[2].market_value) }
+      - "users1_assets_real_estate_2_amount_owed": ${ "{:.2f}".format(real_estate[2].balance) }
+      - "users1_assets_real_estate_2_net_value": ${ "{:.2f}".format(real_estate[2].market_value - real_estate[2].balance) }
+
+
+      
       - "users1_assets_other_0_description": ${ users1_assets_other_0_description }
       - "users1_assets_other_0_market_value": ${ currency(users1_assets_other_0_market_value) }
       - "users1_assets_other_1_description": ${ users1_assets_other_1_description }
