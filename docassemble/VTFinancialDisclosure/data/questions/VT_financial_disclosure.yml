@@ -215,9 +215,10 @@ code: |
   
   nav.set_section('your_household')
   household_others.gather()
-  household_others_income.gathered
+  if household_others.there_are_any == True:
+    household_others_income.gathered
+    household_recap
   household_size
-  household_recap
   users1_income_very_different_30_days
 
   nav.set_section('your_expenses')
@@ -1058,42 +1059,7 @@ fields:
     datatype: integer
     show if:
       variable: household_others.there_are_any
-      is: True
----
-code: |
-  if household_others.target_number > 0:
-    household_size = household_others.target_number + 1
-  else:
-    household_size = 1
----
-#generic object: ALPeopleList
-id: any other people
-question: |
-  Do you have any other household members to tell us about?
-fields:
-  - no label: household_others.there_is_another
-    datatype: yesnoradio
----
-id: household_others complete
-code: |
-  household_others[i].income.gather()
-  household_others[i].complete = True
-  household_others_income.gathered = True
----
-id: household_others income
-variable name: household_others[i].income.terms_ordered
-data: !!omap
-  - public benefits: "Public assistance (including Reach UP, SSI, General Assistance, etc. -- but not SSDI)"
-  - wages: "Wages (amount before taxes are taken out)"
-  - self employment: "Self employment"
-  - unemployment: "Unemployment"
-  - child support: "Child support income"
-  - investments: "Income from investments"
-  - other: "Other income (including SSDI and Social Security)"
----
-id: household income ordered object for checkboxes
-objects:
-  - household_others_income_ordered: DAOrderedDict.using(elements=household_others[i].income.terms_ordered, auto_gather=False, gathered=True)
+      is: True    
 ---
 id: gather household_others
 sets:
@@ -1116,6 +1082,41 @@ fields:
     datatype: checkboxes
     code: |
       household_others_income_ordered
+---
+#generic object: ALPeopleList
+id: any other people
+question: |
+  Do you have any other household members to tell us about?
+fields:
+  - no label: household_others.there_is_another
+    datatype: yesnoradio
+---
+id: household_others complete
+code: |
+  household_others[i].income.gather()
+  household_others[i].complete = True
+  household_others_income.gathered = True
+---
+code: |
+  if household_others.number_gathered() == 0:
+    household_size = 1
+  else:
+    household_size = household_others.number_gathered() + 1
+---
+id: household_others income
+variable name: household_others[i].income.terms_ordered
+data: !!omap
+  - public benefits: "Public assistance (including Reach UP, SSI, General Assistance, etc. -- but not SSDI)"
+  - wages: "Wages (amount before taxes are taken out)"
+  - self employment: "Self employment"
+  - unemployment: "Unemployment"
+  - child support: "Child support income"
+  - investments: "Income from investments"
+  - other: "Other income (including SSDI and Social Security)"
+---
+id: household income ordered object for checkboxes
+objects:
+  - household_others_income_ordered: DAOrderedDict.using(elements=household_others[i].income.terms_ordered, auto_gather=False, gathered=True)
 ---
 id: household_others income info for list
 #generic object: ALIncomeList
