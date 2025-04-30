@@ -1395,7 +1395,7 @@ fields:
     show if: users1_income_very_different_30_days
   - "Why has this income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
     input type: area
-    maxlength: 360
+    maxlength: 370
     show if: users1_income_very_different_30_days
 ---
 ############################# EXPENSES #############################
@@ -2067,15 +2067,18 @@ event: review_financial_disclosure
 question: |
   Review your answers
 review:
+  - note: |
+      ###About you 
   - Edit: users.revisit
     button: |
-      **About you**
-      
-      Edit your birthdate, address, phone and email.
+      **Edit your birthdate, address, phone and email**
 
       % for item in users:
         * ${ item }
       % endfor
+
+  - note: |
+      ###Income 
   - Edit: 
       - public_benefits.revisit
     button: |
@@ -2166,17 +2169,14 @@ review:
       **Edit employer name and address:** ${ jobs[3].employer.name.first }
       % endif
       
-  - Edit: household_size
-    button: |
-      **Size of your household**:
-      ${ household_size }
-      
   - Edit: 
       - household_others.revisit
+      - recompute:
+        - household_size
     button: |
       **Other household members**
       
-      Edit, add or delete information about other household members.
+      Edit, add or delete information about other household members and their income (if any)
       
       % for member in household_others:
       * ${ member.name }
@@ -2199,7 +2199,7 @@ review:
       % if users1_income_very_different_30_days:
       **Details on different income**
 
-      Why the income has been significantly different:
+      Why the income has been very different:
       ${ single_paragraph(users1_income_very_different_30_days_why) }
 
       Your current income during last 30 days:
@@ -2278,7 +2278,8 @@ review:
       
 
       
-
+  - note: |
+      ###Your court case 
   - Edit: trial_court_division
     button: |
       **Court where you file this form:**
@@ -2291,7 +2292,11 @@ review:
   - Edit: docket_number
     button: |
       **Case number**:
+      % if docket_number !='':
       ${ docket_number }
+      % else:
+      Unknown
+      % endif
 
   - Edit: signature_date
     button: |
@@ -2674,20 +2679,24 @@ attachment:
       - "users1_assets_other_4_description": ${ other_assets[4].display_name }
 
 
-      
       - "household_others_1_employed_name": |
-          ${ comma_and_list(member.name for member in household_others_income.matches(source='wages')) }
+          ${ household_others_income.matches(source=['wages'])[0].name }
       - "household_others_1_employed_employer": |
-          ${ comma_and_list(member.employer_name for member in household_others_income.matches(source='wages')) }
+          ${ household_others_income.matches(source=['wages'])[0].employer_name }
       - "household_others_1_employed_employer_address": | 
-          ${ comma_and_list(member.employer_address_on_one_line for member in household_others_income.matches(source='wages')) }
-          
-      - "household_others_2_employed_name": ${ household_others_2_employed_name }
-      - "household_others_2_employed_employer": ${ household_others_2_employed_employer }
-      - "household_others_2_employed_employer_address": ${ household_others_2_employed_employer_address }
-      - "household_others_3_employed_name": ${ household_others_3_employed_name }
-      - "household_others_3_employed_employer": ${ household_others_3_employed_employer }
-      - "household_others_3_employed_employer_address": ${ household_others_3_employed_employer_address }
+          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
+      - "household_others_2_employed_name": |
+          ${ household_others_income.matches(source=['wages'])[1].name }
+      - "household_others_2_employed_employer": |
+          ${ household_others_income.matches(source=['wages'])[1].employer_name }
+      - "household_others_2_employed_employer_address": | 
+          ${ household_others_income.matches(source=['wages'])[1].employer_address_on_one_line }
+      - "household_others_3_employed_name": |
+          ${ household_others_income.matches(source=['wages'])[2].name }
+      - "household_others_3_employed_employer": |
+          ${ household_others_income.matches(source=['wages'])[2].employer_name }
+      - "household_others_3_employed_employer_address": | 
+          ${ household_others_income.matches(source=['wages'])[2].employer_address_on_one_line }
         
       - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
       - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
