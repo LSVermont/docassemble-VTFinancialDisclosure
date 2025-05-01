@@ -20,8 +20,8 @@ objects:
 objects:
   - household_others[i].income: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
 ---
-objects:
-  - household_others_income: ALIncomeList.using(auto_gather=False)
+#objects:
+  #- household_others_income: ALIncomeList.using(auto_gather=False)
 ---
 objects:
   - all_courts: ALCourtLoader.using(file_name='docassemble.VTSharedYMLFile:data/sources/courts_list_full.xlsx')
@@ -36,22 +36,11 @@ metadata:
   short title: >-
     Financial disclosure form
   description: |-
-    This interview helps someone in Vermont complete a financial disclosure form for family court.
+    This interview helps you complete a financial disclosure form for Vermont courts.
   can_I_use_this_form: |
     If you are a _____________, you can use this interview to ____________.
   before_you_start: |
-    This interview will help you complete a financial disclosure form for family court.
-    
-    Before you get started, please gather:
-    
-    1. 
-    1. 
-    1. 
-    
-    When you are finished, you will need to:
-    
-    1. 
-    1.
+    This interview helps you complete a financial disclosure form for Vermont courts.
   maturity: production
   estimated_completion_minutes: 30
   estimated_completion_delta: 5
@@ -219,6 +208,7 @@ code: |
     household_others_income.gathered
     household_recap
   household_size
+
   users1_income_very_different_30_days
 
   nav.set_section('your_expenses')
@@ -280,7 +270,7 @@ subquestion: |
   
 
   
-  <i class="fas fa-file-text fa-2x"></i> This tool will produce a Financial Disclosure Form (100-00127). Sometimes it is used in cases in the Family Division of the Vermont courts. Sometimes it is used in other kinds of cases.
+  <i class="fas fa-file-text fa-2x"></i> This tool will produce a Financial Disclosure Form (100-00127). Sometimes it is used in cases in Vermont Small Claims Court. Sometimes it is used in other kinds of cases.
   
   <i class="fas fa-clock fa-2x"></i> It may take you 45 minutes to complete this. 
   
@@ -296,9 +286,11 @@ continue button field: al_intro_screen
 ---
 id: intro screen
 question: |
-  Intro screen
+  Is this tool right for you?
 subquestion: |
-  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  The Vermont Judiciary has a few financial forms that are used for different purposes. Before you start, double check that you need this particular financial form.
+  
+  This tool will produce a **Financial Disclosure Form (100-00127)**. Sometimes it is used in cases in Vermont Small Claims Court. Sometimes it is used in other kinds of cases.
 fields:
   - To continue, please accept our [terms of use](https://vtlawhelp.org/vtcourtforms/terms-of-use).: acknowledged_information_use
     datatype: checkboxes
@@ -1091,6 +1083,8 @@ fields:
   - no label: household_others.there_is_another
     datatype: yesnoradio
 ---
+
+#### TO DO -- CHECK HOUSEHOLD OTHERS INCOME GATHERING!
 id: household_others complete
 code: |
   household_others[i].income.gather()
@@ -1125,7 +1119,7 @@ question: |
   Tell us about ${ household_others[i].income[j].display_name.lower()} for ${ household_others[i].name.full() } 
 subquestion: |
   % if j > 1:
-  You have already told us about your benefits from ${ comma_and_list(household_others_income.display_name.lower() for household_others_income in household_others[i].income.complete_elements()) }.
+  You have already told us about benefits from ${ comma_and_list(h_others_income.display_name.lower() for h_others_income in household_others[i].income.complete_elements()) }.
   % endif
 fields:
   - Source of income: household_others[i].income[j].source
@@ -1214,13 +1208,6 @@ subquestion: |
 
   % endfor
 continue button field: household_recap
----
-id: public assistance household
-code: |
-  if household_others_income.total(source = "public benefits", times_per_year = 12) > 0:
-    household_others_receive_benefits == True
-  else:
-    household_others_receive_benefits == False
 ---
 ################################# OTHER INCOMES ##############################
 ---
@@ -1349,12 +1336,36 @@ edit:
 ---
 ###################### CHANGE IN INCOME / DIFFERENT INCOME  ##########################
 ---
-id: different monthly income
+#code: |
+#  if defined("jobs"):
+#    personal_monthly_income_recap = jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12)
+#  elif other_incomes.number_gathered() > 0:
+#    personal_monthly_income_recap = other_incomes.total(times_per_year=12)
+#  else:
+#    personal_monthly_income_recap = 0
+#
+#  if household_others.number_gathered() > 0:
+#    if defined("household_others_income"):
+#      household_others_monthly_income_recap = household_others_income.total(times_per_year = 12)
+#    else:
+#      household_others_monthly_income_recap = 0
+#
+#  if defined("jobs"):
+#    household_total_monthly_income_recap = jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)
+#  elif other_incomes.number_gathered() > 0:
+#    household_total_monthly_income_recap = other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)
+#  else:
+#    household_total_monthly_income_recap = 0
+---
+
+
+---
+id: different monthly income recap
 question: |
   Household income in the last 30 days
 
 subquestion: |
-  From what you have told us, your personal monthly income is:
+  From what you have told us, your personal monthly income is:  
   % if defined("jobs"):
   ${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12)) }
   % elif other_incomes.number_gathered() > 0:
@@ -1364,15 +1375,16 @@ subquestion: |
   % endif
 
   % if household_others.number_gathered() > 0:
-  The monthly income of other household members is:
-  % if defined("household_others_income"):
-  ${ currency(household_others_income.total(times_per_year = 12)) }
-  % else:
-  ${ currency(0) }
-  % endif
+    The monthly income of other household members is:  
+
+  ${ currency(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
+
+  ${ currency(sum([ member.income.total(source="self employment", times_per_year = 12) for member in household_others.complete_elements() ])) }
+  
   % endif
 
-  For a total of:
+  
+  For a total of:  
   % if defined("jobs"):
   **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
   % elif other_incomes.number_gathered() > 0:
@@ -2173,6 +2185,9 @@ review:
       - household_others.revisit
       - recompute:
         - household_size
+        - household_others_income.gathered
+      - follow up:
+        - users1_income_very_different_30_days_amount
     button: |
       **Other household members**
       
@@ -2416,7 +2431,7 @@ id: download financial_disclosure
 event: financial_disclosure_download
 question: |
   All done
-subquestion: |
+subquestion: |  
   Thank you ${users}. Your form is ready to download and deliver.
   
   View, download and send your form below. Click the "Edit answers" button to fix any mistakes.
