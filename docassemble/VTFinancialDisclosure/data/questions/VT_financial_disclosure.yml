@@ -2633,6 +2633,7 @@ attachment:
       - "users1_assets_vehicle_2_amount_owed": ${ "{:.2f}".format(vehicles[2].balance) }
       - "users1_assets_vehicle_2_description": |
            ${ vehicles[2].make } ${ vehicles[2].model } ${ vehicles[2].year } 
+
       - "users1_assets_vehicle_2_net_value": ${ "{:.2f}".format(vehicles[2].market_value - vehicles[2].balance) }
       - "users1_assets_vehicle_2_market_value": ${ "{:.2f}".format(vehicles[2].market_value) }  
       - "users1_assets_vehicle_3_amount_owed": ${ "{:.2f}".format(vehicles[3].balance) }
@@ -2659,6 +2660,7 @@ attachment:
       - "users1_assets_real_estate_2_market_value": ${ "{:.2f}".format(real_estate[2].market_value) }
       - "users1_assets_real_estate_2_amount_owed": ${ "{:.2f}".format(real_estate[2].balance) }
       - "users1_assets_real_estate_2_net_value": ${ "{:.2f}".format(real_estate[2].market_value - real_estate[2].balance) }
+
 
 
       - "users1_assets_other_0_market_value": ${ currency(other_assets[0].market_value,symbol="") }
