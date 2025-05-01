@@ -205,7 +205,6 @@ code: |
   nav.set_section('your_household')
   household_others.gather()
   if household_others.there_are_any == True:
-    household_others_income.gathered
     household_recap
   household_size
 
@@ -1084,12 +1083,12 @@ fields:
     datatype: yesnoradio
 ---
 
-#### TO DO -- CHECK HOUSEHOLD OTHERS INCOME GATHERING!
+#### TO DO -- CHECK THIS!
 id: household_others complete
 code: |
   household_others[i].income.gather()
   household_others[i].complete = True
-  household_others_income.gathered = True
+  household_others.gathered = True
 ---
 code: |
   if household_others.number_gathered() == 0:
@@ -1176,12 +1175,12 @@ comment: |
 code: |
   household_others_income_other_display = "another source of income"
 ---
-code: |
-  for member in household_others:
-    for income in member.income:
-      household_others_income.append(income)
-      household_others_income[-1].name = member.name
-  household_others_income.gathered = True
+#code: |
+#  for member in household_others:
+#    for income in member.income:
+#      household_others_income.append(income)
+#      household_others_income[-1].name = member.name
+#  household_others_income.gathered = True
 ---
 id: household recap
 question: |
@@ -1332,33 +1331,7 @@ edit:
   - source
   - value
 ---
-
----
 ###################### CHANGE IN INCOME / DIFFERENT INCOME  ##########################
----
-#code: |
-#  if defined("jobs"):
-#    personal_monthly_income_recap = jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12)
-#  elif other_incomes.number_gathered() > 0:
-#    personal_monthly_income_recap = other_incomes.total(times_per_year=12)
-#  else:
-#    personal_monthly_income_recap = 0
-#
-#  if household_others.number_gathered() > 0:
-#    if defined("household_others_income"):
-#      household_others_monthly_income_recap = household_others_income.total(times_per_year = 12)
-#    else:
-#      household_others_monthly_income_recap = 0
-#
-#  if defined("jobs"):
-#    household_total_monthly_income_recap = jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)
-#  elif other_incomes.number_gathered() > 0:
-#    household_total_monthly_income_recap = other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)
-#  else:
-#    household_total_monthly_income_recap = 0
----
-
-
 ---
 id: different monthly income recap
 question: |
@@ -1375,20 +1348,15 @@ subquestion: |
   % endif
 
   % if household_others.number_gathered() > 0:
-    The monthly income of other household members is:  
-
-  ${ currency(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
-
-  ${ currency(sum([ member.income.total(source="self employment", times_per_year = 12) for member in household_others.complete_elements() ])) }
-  
+    The monthly income of other household members is:
+    ${ currency(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
   % endif
 
-  
   For a total of:  
   % if defined("jobs"):
-  **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }**
   % elif other_incomes.number_gathered() > 0:
-  **${ currency(other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  **${ currency(other_incomes.total(times_per_year=12) + sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }**
   % else:
   ${ currency(0) }
   % endif
@@ -2185,7 +2153,6 @@ review:
       - household_others.revisit
       - recompute:
         - household_size
-        - household_others_income.gathered
       - follow up:
         - users1_income_very_different_30_days_amount
     button: |
@@ -2402,7 +2369,8 @@ columns:
       row_item.employer_address_on_one_line if defined("row_item.employer_address_on_one_line") else ""
 edit:
   - value
-  - household_others_income.gathered
+  - employer_name
+  - employer_address
 confirm: True  
 ---
 ---
@@ -2539,13 +2507,13 @@ attachment:
       - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
       - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
       - "household_others_receive_benefits_yes": |
-          % if household_others_income.total(source = "public benefits") > 0:
+          % if household_others[i].income.total(source = "public benefits") > 0:
           ${ True }
           % else:
           ${ False }
           % endif
       - "household_others_receive_benefits_no": |
-          % if household_others_income.total(source = "public benefits") > 0:
+          % if household_others[i].income.total(source = "public benefits") > 0:
           ${ False }
           % else:
           ${ True }
@@ -2566,16 +2534,16 @@ attachment:
       - "users1_income_monthly_total": |
           ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12)) }
 
-      - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "wages", times_per_year = 12)) }
-      - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "self employment", times_per_year = 12)) }
-      - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "unemployment", times_per_year = 12)) }
-      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "child support", times_per_year = 12)) }
-      - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "public benefits", times_per_year = 12)) }
-      - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "investments", times_per_year = 12)) }
-      - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "other", times_per_year = 12)) }
-      - "household_others_income_monthly_total": ${ "{:.2f}".format(household_others_income.total(times_per_year = 12)) }
+      - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="wages", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="self employment", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="unemployment", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="child suppport", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="public benefits", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="investments", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="other", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_monthly_total": ${ "{:.2f}".format(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
 
-      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) }
+      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + (sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ]))) }
         
       - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
       - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
@@ -2695,7 +2663,7 @@ attachment:
 
 
       - "household_others_1_employed_name": |
-          ${ household_others_income.matches(source=['wages'])[0].name }
+          ${ household_others.income.matches(source="wages")[0].name }
       - "household_others_1_employed_employer": |
           ${ household_others_income.matches(source=['wages'])[0].employer_name }
       - "household_others_1_employed_employer_address": | 
