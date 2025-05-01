@@ -2163,7 +2163,7 @@ review:
       % for member in household_others:
       * ${ member.name }
       % endfor
-            
+
   - Edit: 
       - users1_income_very_different_30_days
       - follow up:
@@ -2663,9 +2663,13 @@ attachment:
 
 
       - "household_others_1_employed_name": |
-          ${ household_others.income.matches(source="wages")[0].name }
+          % for member in household_others.complete_elements():
+          % if member.income.total(source = "wages") > 0:
+          ${ member[0].name }
+          % endif
+          % endfor
       - "household_others_1_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[0].employer_name }
+          ${ household_others.income.matches(source="wages")[0].employer_name }
       - "household_others_1_employed_employer_address": | 
           ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
       - "household_others_2_employed_name": |
