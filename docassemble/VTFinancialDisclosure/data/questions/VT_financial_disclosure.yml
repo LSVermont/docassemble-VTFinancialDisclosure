@@ -20,8 +20,8 @@ objects:
 objects:
   - household_others[i].income: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
 ---
-objects:
-  - household_others_income: ALIncomeList.using(auto_gather=False)
+#objects:
+  #- household_others_income: ALIncomeList.using(auto_gather=False)
 ---
 objects:
   - all_courts: ALCourtLoader.using(file_name='docassemble.VTSharedYMLFile:data/sources/courts_list_full.xlsx')
@@ -36,22 +36,11 @@ metadata:
   short title: >-
     Financial disclosure form
   description: |-
-    This interview helps someone in Vermont complete a financial disclosure form for family court.
+    This interview helps you complete a financial disclosure form for Vermont courts.
   can_I_use_this_form: |
     If you are a _____________, you can use this interview to ____________.
   before_you_start: |
-    This interview will help you complete a financial disclosure form for family court.
-    
-    Before you get started, please gather:
-    
-    1. 
-    1. 
-    1. 
-    
-    When you are finished, you will need to:
-    
-    1. 
-    1.
+    This interview helps you complete a financial disclosure form for Vermont courts.
   maturity: production
   estimated_completion_minutes: 30
   estimated_completion_delta: 5
@@ -215,9 +204,10 @@ code: |
   
   nav.set_section('your_household')
   household_others.gather()
-  household_others_income.gathered
+  if household_others.there_are_any == True:
+    household_recap
   household_size
-  household_recap
+
   users1_income_very_different_30_days
 
   nav.set_section('your_expenses')
@@ -279,7 +269,7 @@ subquestion: |
   
 
   
-  <i class="fas fa-file-text fa-2x"></i> This tool will produce a Financial Disclosure Form (100-00127). Sometimes it is used in cases in the Family Division of the Vermont courts. Sometimes it is used in other kinds of cases.
+  <i class="fas fa-file-text fa-2x"></i> This tool will produce a Financial Disclosure Form (100-00127). Sometimes it is used in cases in Vermont Small Claims Court. Sometimes it is used in other kinds of cases.
   
   <i class="fas fa-clock fa-2x"></i> It may take you 45 minutes to complete this. 
   
@@ -295,9 +285,11 @@ continue button field: al_intro_screen
 ---
 id: intro screen
 question: |
-  Intro screen
+  Is this tool right for you?
 subquestion: |
-  xxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+  The Vermont Judiciary has a few financial forms that are used for different purposes. Before you start, double check that you need this particular financial form.
+  
+  This tool will produce a **Financial Disclosure Form (100-00127)**. Sometimes it is used in cases in Vermont Small Claims Court. Sometimes it is used in other kinds of cases.
 fields:
   - To continue, please accept our [terms of use](https://vtlawhelp.org/vtcourtforms/terms-of-use).: acknowledged_information_use
     datatype: checkboxes
@@ -1058,42 +1050,7 @@ fields:
     datatype: integer
     show if:
       variable: household_others.there_are_any
-      is: True
----
-code: |
-  if household_others.target_number > 0:
-    household_size = household_others.target_number + 1
-  else:
-    household_size = 1
----
-#generic object: ALPeopleList
-id: any other people
-question: |
-  Do you have any other household members to tell us about?
-fields:
-  - no label: household_others.there_is_another
-    datatype: yesnoradio
----
-id: household_others complete
-code: |
-  household_others[i].income.gather()
-  household_others[i].complete = True
-  household_others_income.gathered = True
----
-id: household_others income
-variable name: household_others[i].income.terms_ordered
-data: !!omap
-  - public benefits: "Public assistance (including Reach UP, SSI, General Assistance, etc. -- but not SSDI)"
-  - wages: "Wages (amount before taxes are taken out)"
-  - self employment: "Self employment"
-  - unemployment: "Unemployment"
-  - child support: "Child support income"
-  - investments: "Income from investments"
-  - other: "Other income (including SSDI and Social Security)"
----
-id: household income ordered object for checkboxes
-objects:
-  - household_others_income_ordered: DAOrderedDict.using(elements=household_others[i].income.terms_ordered, auto_gather=False, gathered=True)
+      is: True    
 ---
 id: gather household_others
 sets:
@@ -1117,6 +1074,43 @@ fields:
     code: |
       household_others_income_ordered
 ---
+#generic object: ALPeopleList
+id: any other people
+question: |
+  Do you have any other household members to tell us about?
+fields:
+  - no label: household_others.there_is_another
+    datatype: yesnoradio
+---
+
+#### TO DO -- CHECK THIS!
+id: household_others complete
+code: |
+  household_others[i].income.gather()
+  household_others[i].complete = True
+  household_others.gathered = True
+---
+code: |
+  if household_others.number_gathered() == 0:
+    household_size = 1
+  else:
+    household_size = household_others.number_gathered() + 1
+---
+id: household_others income
+variable name: household_others[i].income.terms_ordered
+data: !!omap
+  - public benefits: "Public assistance (including Reach UP, SSI, General Assistance, etc. -- but not SSDI)"
+  - wages: "Wages (amount before taxes are taken out)"
+  - self employment: "Self employment"
+  - unemployment: "Unemployment"
+  - child support: "Child support income"
+  - investments: "Income from investments"
+  - other: "Other income (including SSDI and Social Security)"
+---
+id: household income ordered object for checkboxes
+objects:
+  - household_others_income_ordered: DAOrderedDict.using(elements=household_others[i].income.terms_ordered, auto_gather=False, gathered=True)
+---
 id: household_others income info for list
 #generic object: ALIncomeList
 reconsider: household_others[i].income[j].display_name
@@ -1124,7 +1118,7 @@ question: |
   Tell us about ${ household_others[i].income[j].display_name.lower()} for ${ household_others[i].name.full() } 
 subquestion: |
   % if j > 1:
-  You have already told us about your benefits from ${ comma_and_list(household_others_income.display_name.lower() for household_others_income in household_others[i].income.complete_elements()) }.
+  You have already told us about benefits from ${ comma_and_list(h_others_income.display_name.lower() for h_others_income in household_others[i].income.complete_elements()) }.
   % endif
 fields:
   - Source of income: household_others[i].income[j].source
@@ -1181,12 +1175,12 @@ comment: |
 code: |
   household_others_income_other_display = "another source of income"
 ---
-code: |
-  for member in household_others:
-    for income in member.income:
-      household_others_income.append(income)
-      household_others_income[-1].name = member.name
-  household_others_income.gathered = True
+#code: |
+#  for member in household_others:
+#    for income in member.income:
+#      household_others_income.append(income)
+#      household_others_income[-1].name = member.name
+#  household_others_income.gathered = True
 ---
 id: household recap
 question: |
@@ -1213,13 +1207,6 @@ subquestion: |
 
   % endfor
 continue button field: household_recap
----
-id: public assistance household
-code: |
-  if household_others_income.total(source = "public benefits", times_per_year = 12) > 0:
-    household_others_receive_benefits == True
-  else:
-    household_others_receive_benefits == False
 ---
 ################################# OTHER INCOMES ##############################
 ---
@@ -1344,16 +1331,14 @@ edit:
   - source
   - value
 ---
-
----
 ###################### CHANGE IN INCOME / DIFFERENT INCOME  ##########################
 ---
-id: different monthly income
+id: different monthly income recap
 question: |
   Household income in the last 30 days
 
 subquestion: |
-  From what you have told us, your personal monthly income is:
+  From what you have told us, your personal monthly income is:  
   % if defined("jobs"):
   ${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12)) }
   % elif other_incomes.number_gathered() > 0:
@@ -1363,19 +1348,15 @@ subquestion: |
   % endif
 
   % if household_others.number_gathered() > 0:
-  The monthly income of other household members is:
-  % if defined("household_others_income"):
-  ${ currency(household_others_income.total(times_per_year = 12)) }
-  % else:
-  ${ currency(0) }
-  % endif
+    The monthly income of other household members is:
+    ${ currency(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
   % endif
 
-  For a total of:
+  For a total of:  
   % if defined("jobs"):
-  **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  **${ currency(jobs.gross_total(times_per_year=12) + other_incomes.total(times_per_year=12) + sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }**
   % elif other_incomes.number_gathered() > 0:
-  **${ currency(other_incomes.total(times_per_year=12) + household_others_income.total(times_per_year = 12)) }**
+  **${ currency(other_incomes.total(times_per_year=12) + sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }**
   % else:
   ${ currency(0) }
   % endif
@@ -1394,7 +1375,7 @@ fields:
     show if: users1_income_very_different_30_days
   - "Why has this income been significantly different than usual in the last 30 days?": users1_income_very_different_30_days_why
     input type: area
-    maxlength: 360
+    maxlength: 370
     show if: users1_income_very_different_30_days
 ---
 ############################# EXPENSES #############################
@@ -2066,15 +2047,18 @@ event: review_financial_disclosure
 question: |
   Review your answers
 review:
+  - note: |
+      ###About you 
   - Edit: users.revisit
     button: |
-      **About you**
-      
-      Edit your birthdate, address, phone and email.
+      **Edit your birthdate, address, phone and email**
 
       % for item in users:
         * ${ item }
       % endfor
+
+  - note: |
+      ###Income 
   - Edit: 
       - public_benefits.revisit
     button: |
@@ -2165,17 +2149,16 @@ review:
       **Edit employer name and address:** ${ jobs[3].employer.name.first }
       % endif
       
-  - Edit: household_size
-    button: |
-      **Size of your household**:
-      ${ household_size }
-      
   - Edit: 
       - household_others.revisit
+      - recompute:
+        - household_size
+      - follow up:
+        - users1_income_very_different_30_days_amount
     button: |
       **Other household members**
       
-      Edit, add or delete information about other household members.
+      Edit, add or delete information about other household members and their income (if any)
       
       % for member in household_others:
       * ${ member.name }
@@ -2198,7 +2181,7 @@ review:
       % if users1_income_very_different_30_days:
       **Details on different income**
 
-      Why the income has been significantly different:
+      Why the income has been very different:
       ${ single_paragraph(users1_income_very_different_30_days_why) }
 
       Your current income during last 30 days:
@@ -2277,7 +2260,8 @@ review:
       
 
       
-
+  - note: |
+      ###Your court case 
   - Edit: trial_court_division
     button: |
       **Court where you file this form:**
@@ -2290,7 +2274,11 @@ review:
   - Edit: docket_number
     button: |
       **Case number**:
+      % if docket_number !='':
       ${ docket_number }
+      % else:
+      Unknown
+      % endif
 
   - Edit: signature_date
     button: |
@@ -2381,7 +2369,8 @@ columns:
       row_item.employer_address_on_one_line if defined("row_item.employer_address_on_one_line") else ""
 edit:
   - value
-  - household_others_income.gathered
+  - employer_name
+  - employer_address
 confirm: True  
 ---
 ---
@@ -2410,7 +2399,7 @@ id: download financial_disclosure
 event: financial_disclosure_download
 question: |
   All done
-subquestion: |
+subquestion: |  
   Thank you ${users}. Your form is ready to download and deliver.
   
   View, download and send your form below. Click the "Edit answers" button to fix any mistakes.
@@ -2518,13 +2507,13 @@ attachment:
       - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
       - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
       - "household_others_receive_benefits_yes": |
-          % if household_others_income.total(source = "public benefits") > 0:
+          % if household_others[i].income.total(source = "public benefits") > 0:
           ${ True }
           % else:
           ${ False }
           % endif
       - "household_others_receive_benefits_no": |
-          % if household_others_income.total(source = "public benefits") > 0:
+          % if household_others[i].income.total(source = "public benefits") > 0:
           ${ False }
           % else:
           ${ True }
@@ -2545,16 +2534,16 @@ attachment:
       - "users1_income_monthly_total": |
           ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12)) }
 
-      - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "wages", times_per_year = 12)) }
-      - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "self employment", times_per_year = 12)) }
-      - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "unemployment", times_per_year = 12)) }
-      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "child support", times_per_year = 12)) }
-      - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "public benefits", times_per_year = 12)) }
-      - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "investments", times_per_year = 12)) }
-      - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(household_others_income.total(source = "other", times_per_year = 12)) }
-      - "household_others_income_monthly_total": ${ "{:.2f}".format(household_others_income.total(times_per_year = 12)) }
+      - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="wages", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="self employment", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="unemployment", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="child suppport", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="public benefits", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="investments", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="other", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_monthly_total": ${ "{:.2f}".format(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
 
-      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + household_others_income.total(times_per_year = 12)) }
+      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + (sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ]))) }
         
       - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
       - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
@@ -2675,20 +2664,24 @@ attachment:
       - "users1_assets_other_4_description": ${ other_assets[4].display_name }
 
 
-      
       - "household_others_1_employed_name": |
-          ${ comma_and_list(member.name for member in household_others_income.matches(source='wages')) }
+          ${ household_others.income.matches(source="wages")[0].name }
       - "household_others_1_employed_employer": |
-          ${ comma_and_list(member.employer_name for member in household_others_income.matches(source='wages')) }
+          ${ household_others_income.matches(source=['wages'])[0].employer_name }
       - "household_others_1_employed_employer_address": | 
-          ${ comma_and_list(member.employer_address_on_one_line for member in household_others_income.matches(source='wages')) }
-          
-      - "household_others_2_employed_name": ${ household_others_2_employed_name }
-      - "household_others_2_employed_employer": ${ household_others_2_employed_employer }
-      - "household_others_2_employed_employer_address": ${ household_others_2_employed_employer_address }
-      - "household_others_3_employed_name": ${ household_others_3_employed_name }
-      - "household_others_3_employed_employer": ${ household_others_3_employed_employer }
-      - "household_others_3_employed_employer_address": ${ household_others_3_employed_employer_address }
+          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
+      - "household_others_2_employed_name": |
+          ${ household_others_income.matches(source=['wages'])[1].name }
+      - "household_others_2_employed_employer": |
+          ${ household_others_income.matches(source=['wages'])[1].employer_name }
+      - "household_others_2_employed_employer_address": | 
+          ${ household_others_income.matches(source=['wages'])[1].employer_address_on_one_line }
+      - "household_others_3_employed_name": |
+          ${ household_others_income.matches(source=['wages'])[2].name }
+      - "household_others_3_employed_employer": |
+          ${ household_others_income.matches(source=['wages'])[2].employer_name }
+      - "household_others_3_employed_employer_address": | 
+          ${ household_others_income.matches(source=['wages'])[2].employer_address_on_one_line }
         
       - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
       - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
