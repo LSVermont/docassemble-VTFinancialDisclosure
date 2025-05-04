@@ -2476,6 +2476,7 @@ attachment:
   filename: financial_disclosure_next_steps
   docx template file: financial_disclosure_next_steps.docx
   variable name: financial_disclosure_Post_interview_instructions[i]
+  skip undefined: True
   fields:
     - "address_county": ${ trial_court.address.county }
     - "court_division": ${ trial_court.division }
@@ -2717,13 +2718,18 @@ attachment:
 
 
       - "household_others_1_employed_name": |
-          % for member in household_others.complete_elements():
-          % if member.income.total(source = "wages") > 0:
-          ${ member[0].name }
+
+          % if household_others.complete_elements() > 0:
+          ${ household_others.complete_elements()[0].name }
           % endif
-          % endfor
+          % if household_others.complete_elements() > 1:
+          ${ comma_and_list(member.name for member in household_others.complete_elements()[1:] if member.income.total(source="wages") > 0 ) }
+          % endif
+      
+        
       - "household_others_1_employed_employer": |
-          ${ household_others.income.matches(source="wages")[0].employer_name }
+          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
+
       - "household_others_1_employed_employer_address": | 
           ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
       - "household_others_2_employed_name": |
