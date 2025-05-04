@@ -2718,32 +2718,23 @@ attachment:
 
 
       - "household_others_1_employed_name": |
-
-          % if household_others.complete_elements() > 0:
-          ${ household_others.complete_elements()[0].name }
-          % endif
-          % if household_others.complete_elements() > 1:
-          ${ comma_and_list(member.name for member in household_others.complete_elements()[1:] if member.income.total(source="wages") > 0 ) }
-          % endif
-      
-        
+          ${ household_others[0] if household_others[0].income.total(source=['wages']) > 0 else "" }
       - "household_others_1_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
-
-      - "household_others_1_employed_employer_address": | 
-          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
+          ${ household_others[0].income.matches(source=['wages'])[0].employer_name if household_others[0].income.total(source=['wages']) > 0 else "" }
+      - "household_others_1_employed_employer_address": |
+          ${ household_others[0].income.matches(source=['wages'])[0].employer_address_on_one_line if household_others[0].income.total(source=['wages']) > 0 else "" }
       - "household_others_2_employed_name": |
-          ${ household_others_income.matches(source=['wages'])[1].name }
+          ${ household_others[1] if household_others[1].income.total(source=['wages']) > 0 else "" }
       - "household_others_2_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[1].employer_name }
-      - "household_others_2_employed_employer_address": | 
-          ${ household_others_income.matches(source=['wages'])[1].employer_address_on_one_line }
+          ${ household_others[1].income.matches(source=['wages'])[0].employer_name if household_others[1].income.total(source=['wages']) > 0 else "" }
+      - "household_others_2_employed_employer_address": |
+          ${ household_others[1].income.matches(source=['wages'])[0].employer_address_on_one_line if household_others[1].income.total(source=['wages']) > 0 else "" }
       - "household_others_3_employed_name": |
-          ${ household_others_income.matches(source=['wages'])[2].name }
+          ${ household_others[2] if household_others[2].income.total(source=['wages']) > 0 else "" }
       - "household_others_3_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[2].employer_name }
-      - "household_others_3_employed_employer_address": | 
-          ${ household_others_income.matches(source=['wages'])[2].employer_address_on_one_line }
+          ${ household_others[2].income.matches(source=['wages'])[0].employer_name if household_others[2].income.total(source=['wages']) > 0 else "" }
+      - "household_others_3_employed_employer_address": |
+          ${ household_others[2].income.matches(source=['wages'])[0].employer_address_on_one_line if household_others[2].income.total(source="wages") > 0 else "" }
         
       - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
       - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
