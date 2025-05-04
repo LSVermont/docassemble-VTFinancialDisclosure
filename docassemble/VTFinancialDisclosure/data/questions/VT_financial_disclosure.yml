@@ -20,15 +20,11 @@ objects:
 objects:
   - household_others[i].income: ALIncomeList.using(complete_attribute='complete',there_is_another=False)
 ---
-#objects:
-  #- household_others_income: ALIncomeList.using(auto_gather=False)
----
 objects:
   - all_courts: ALCourtLoader.using(file_name='docassemble.VTSharedYMLFile:data/sources/courts_list_full.xlsx')
 ---
 code: |
   trial_court_index = all_courts.matching_courts_in_county(county_name=user_selected_county,search_columns=['division_abbr'],search_string=trial_court_division)[0][0]
----
 ---
 metadata:
   title: >-
@@ -2461,12 +2457,26 @@ progress: 100
 # ALDocument objects specify the metadata for each template
 objects:
   - financial_disclosure_Post_interview_instructions: ALDocument.using(title="NEXT STEPS - Instructions for filing this form with the court", filename="financial_disclosure_next_steps.docx", enabled=True, has_addendum=False)
-  - financial_disclosure_attachment: ALDocument.using(title="Financial Disclosure - form 100-00127", filename="financial_disclosure", enabled=True, has_addendum=False, )
+  - financial_disclosure_attachment: ALDocument.using(title="Financial Disclosure - form 100-00127", filename="financial_disclosure", enabled=True, has_addendum=True)
 ---
 # Bundles group the ALDocuments into separate downloads, such as for court and for the user
 objects:
   - al_user_bundle: ALDocumentBundle.using(elements=[financial_disclosure_Post_interview_instructions, financial_disclosure_attachment], filename="financial_disclosure", title="All forms to download", enabled=True)
   - al_court_bundle: ALDocumentBundle.using(elements=[financial_disclosure_attachment],  filename="financial_disclosure", title="All forms to deliver to court", enabled=True)
+---
+attachment:
+  variable name: financial_disclosure_attachment.addendum
+  docx template file: financial_disclosure_addendum.docx
+---
+code: |
+  financial_disclosure_attachment.overflow_fields['household_others'].overflow_trigger = 6
+  financial_disclosure_attachment.overflow_fields['household_others'].label = "Additional household members"
+  financial_disclosure_attachment.overflow_fields['household_others'].headers = [
+    {"name": "Name"},
+  ]
+  financial_disclosure_attachment.overflow_fields['household_others[i].income'].overflow_trigger = 3
+  financial_disclosure_attachment.overflow_fields['household_others[i].income'].label = "Additional household members who earn wages"
+  financial_disclosure_attachment.overflow_fields.gathered = True  
 ---
 # Each attachment defines a key in an ALDocument. We use `i` as the placeholder here so the same template is 
 # used for "preview" and "final" keys, and logic in the template checks the value of 
@@ -2560,16 +2570,16 @@ attachment:
       - "users1_receives_benefits_yes": ${ len(public_benefits) > 0 }
       - "users1_receives_benefits_no": ${ len(public_benefits) == 0 }
       - "household_others_receive_benefits_yes": |
-          % if household_others[i].income.total(source = "public benefits") > 0:
+          % if sum([ member.income.total(source="public benefits", times_per_year = 12) for member in household_others.complete_elements() ]) > 0:
           ${ True }
           % else:
           ${ False }
           % endif
       - "household_others_receive_benefits_no": |
-          % if household_others[i].income.total(source = "public benefits") > 0:
-          ${ False }
-          % else:
+          % if sum([ member.income.total(source="public benefits", times_per_year = 12) for member in household_others.complete_elements() ]) == 0:
           ${ True }
+          % else:
+          ${ False }
           % endif
           
       - "users1_benefits_monthly_amount": ${ "{:.2f}".format(public_benefits.total(times_per_year=12)) }
