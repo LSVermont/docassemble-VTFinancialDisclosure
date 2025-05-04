@@ -2717,18 +2717,22 @@ attachment:
       - "users1_assets_other_4_description": ${ other_assets[4].display_name }
 
 
+      # Because you have `skip undefined: True` you don't need
+      # to be as careful - you don't need `.complete_elements()
       - "household_others_1_employed_name": |
           ${ household_others[0] if household_others[0].income.total(source=['wages']) > 0 else "" }
       - "household_others_1_employed_employer": |
           ${ household_others[0].income.matches(source=['wages'])[0].employer_name if household_others[0].income.total(source=['wages']) > 0 else "" }
       - "household_others_1_employed_employer_address": |
           ${ household_others[0].income.matches(source=['wages'])[0].employer_address_on_one_line if household_others[0].income.total(source=['wages']) > 0 else "" }
+
       - "household_others_2_employed_name": |
           ${ household_others[1] if household_others[1].income.total(source=['wages']) > 0 else "" }
       - "household_others_2_employed_employer": |
           ${ household_others[1].income.matches(source=['wages'])[0].employer_name if household_others[1].income.total(source=['wages']) > 0 else "" }
       - "household_others_2_employed_employer_address": |
           ${ household_others[1].income.matches(source=['wages'])[0].employer_address_on_one_line if household_others[1].income.total(source=['wages']) > 0 else "" }
+
       - "household_others_3_employed_name": |
           ${ household_others[2] if household_others[2].income.total(source=['wages']) > 0 else "" }
       - "household_others_3_employed_employer": |
