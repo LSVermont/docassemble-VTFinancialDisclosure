@@ -2703,8 +2703,6 @@ attachment:
       - "users1_assets_real_estate_2_amount_owed": ${ "{:.2f}".format(real_estate[2].balance) }
       - "users1_assets_real_estate_2_net_value": ${ "{:.2f}".format(real_estate[2].market_value - real_estate[2].balance) }
 
-
-
       - "users1_assets_other_0_market_value": ${ currency(other_assets[0].market_value,symbol="") }
       - "users1_assets_other_0_description": ${ other_assets[0].display_name }
       - "users1_assets_other_1_market_value": ${ currency(other_assets[1].market_value,symbol="") }
@@ -2714,34 +2712,30 @@ attachment:
       - "users1_assets_other_3_market_value": ${ currency(other_assets[3].market_value,symbol="") }
       - "users1_assets_other_3_description": ${ other_assets[3].display_name }
       - "users1_assets_other_4_market_value": ${ currency(other_assets[4].market_value,symbol="") }
-      - "users1_assets_other_4_description": ${ other_assets[4].display_name }
+      - "users1_assets_other_4_description": ${ other_assets[4].display_name }`
 
-
+      # Because you have `skip undefined: True` you don't need
+      # to be as careful - you don't need `.complete_elements()
       - "household_others_1_employed_name": |
-          % if household_others.complete_elements() > 0:
-          ${ household_others.complete_elements()[0].name }
-          % endif
-          % if household_others.complete_elements() > 1:
-          ${ comma_and_list(member.name for member in household_others.complete_elements()[1:] if member.income.total(source="wages") > 0 ) }
-          % endif
-      
-        
+          ${ household_others[0] if household_others[0].income.total(source="wages") > 0 else "" }
       - "household_others_1_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
-      - "household_others_1_employed_employer_address": | 
-          ${ household_others_income.matches(source=['wages'])[0].employer_address_on_one_line }
+          ${ household_others[0].income.matches(source="wages")[0].employer_name if household_others[0].income.total(source="wages") > 0 else "" }
+      - "household_others_1_employed_employer_address": |
+          ${ household_others[0].income.matches(source="wages")[0].employer_address_on_one_line if household_others[0].income.total(source="wages") > 0 else "" }
+          
       - "household_others_2_employed_name": |
-          ${ household_others_income.matches(source=['wages'])[1].name }
+          ${ household_others[1] if household_others[1].income.total(source="wages") > 0 else "" }
       - "household_others_2_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[1].employer_name }
-      - "household_others_2_employed_employer_address": | 
-          ${ household_others_income.matches(source=['wages'])[1].employer_address_on_one_line }
+          ${ household_others[1].income.matches(source="wages")[0].employer_name if household_others[1].income.total(source="wages") > 0 else "" }
+      - "household_others_2_employed_employer_address": |
+          ${ household_others[1].income.matches(source="wages")[0].employer_address_on_one_line if household_others[1].income.total(source="wages") > 0 else "" }
+          
       - "household_others_3_employed_name": |
-          ${ household_others_income.matches(source=['wages'])[2].name }
+          ${ household_others[2] if household_others[2].income.total(source="wages") > 0 else "" }
       - "household_others_3_employed_employer": |
-          ${ household_others_income.matches(source=['wages'])[2].employer_name }
-      - "household_others_3_employed_employer_address": | 
-          ${ household_others_income.matches(source=['wages'])[2].employer_address_on_one_line }
+          ${ household_others[2].income.matches(source="wages")[0].employer_name if household_others[2].income.total(source="wages") > 0 else "" }
+      - "household_others_3_employed_employer_address": |
+          ${ household_others[2].income.matches(source="wages")[0].employer_address_on_one_line if household_others[2].income.total(source="wages") > 0 else "" }
         
       - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
       - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
@@ -2753,6 +2747,3 @@ attachment:
       - "users1_mailing_address_line_two": ${ users[0].mailing_address.line_two() }
       - "Address 3": ${ Address_3 }
       - "users1_email__1": ${ users[0].email }
-
-
-
