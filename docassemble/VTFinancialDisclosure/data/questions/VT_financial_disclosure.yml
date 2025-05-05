@@ -2469,13 +2469,8 @@ attachment:
   docx template file: financial_disclosure_addendum.docx
 ---
 code: |
-  financial_disclosure_attachment.overflow_fields['household_others'].overflow_trigger = 6
+  financial_disclosure_attachment.overflow_fields['household_others'].overflow_trigger = 3
   financial_disclosure_attachment.overflow_fields['household_others'].label = "Additional household members"
-  financial_disclosure_attachment.overflow_fields['household_others'].headers = [
-    {"name": "Name"},
-  ]
-  financial_disclosure_attachment.overflow_fields['household_others[i].income'].overflow_trigger = 3
-  financial_disclosure_attachment.overflow_fields['household_others[i].income'].label = "Additional household members who earn wages"
   financial_disclosure_attachment.overflow_fields.gathered = True  
 ---
 # Each attachment defines a key in an ALDocument. We use `i` as the placeholder here so the same template is 
