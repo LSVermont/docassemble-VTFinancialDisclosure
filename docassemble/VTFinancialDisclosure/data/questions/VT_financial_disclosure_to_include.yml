@@ -172,7 +172,6 @@ code: |
 comment: |
   This block includes the logic for standalone interviews.
   Delete mandatory: True to include in another interview
-mandatory: True
 code: |
   al_intro_screen
   interview_order_financial_disclosure
