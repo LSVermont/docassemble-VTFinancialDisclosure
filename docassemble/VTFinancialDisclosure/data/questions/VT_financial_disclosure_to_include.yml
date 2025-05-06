@@ -97,6 +97,7 @@ code: |
   # Set the allowed courts for this interview
   allowed_courts = []
 
+  lets_start_financial_disclosure
   acknowledged_information_use
   
   trial_court_division
@@ -194,6 +195,16 @@ code: |
       },
   )
   financial_disclosure_download
+---
+id: lets start financial disclosure
+question: |
+  Let's start the Financial Disclosure form questions
+subquestion: |
+  You've already answered a few of the questions that are asked in the Financial Disclosure form 100-00127. Now we'll work through the remaining questions.
+
+  Tap Next to get started.
+
+continue button field: lets_start_financial_disclosure
 ---
 event: edit_answers_screen
 id: edit answers screen
