@@ -1324,7 +1324,6 @@ fields:
 ############################# EXPENSES #############################
 ---
 id: expenses intro
-mandatory: True
 continue button field: expenses_intro
 question: |
   Expenses
@@ -1496,7 +1495,6 @@ edit:
 ################ ASSETS ################
 ---
 id: assets intro
-mandatory: True
 continue button field: assets_intro
 question: |
   Assets
