@@ -119,11 +119,13 @@ code: |
   if len(jobs) > 0:
     review_jobs
   set_progress(28)
-
+  
   employer_jobs
   self_employed_jobs
   employer_jobs_review_table
   self_employed_jobs_review_table
+
+
   
   if len(public_benefits) > 0:
     public_benefits.review_items
@@ -2405,13 +2407,13 @@ progress: 100
 ---
 # ALDocument objects specify the metadata for each template
 objects:
-  - financial_disclosure_Post_interview_instructions: ALDocument.using(title="NEXT STEPS - Instructions for filing this form with the court", filename="financial_disclosure_next_steps.docx", enabled=True, has_addendum=False)
+  - financial_disclosure_Post_interview_instructions: ALDocument.using(title="NEXT STEPS - Instructions for filing this form with the court", filename="financial_disclosure_next_steps.docx", enabled=False, has_addendum=False)
   - financial_disclosure_attachment: ALDocument.using(title="Financial Disclosure - form 100-00127", filename="financial_disclosure", enabled=True, has_addendum=True)
 ---
 # Bundles group the ALDocuments into separate downloads, such as for court and for the user
-objects:
-  - al_user_bundle: ALDocumentBundle.using(elements=[financial_disclosure_Post_interview_instructions, financial_disclosure_attachment], filename="financial_disclosure", title="All forms to download", enabled=True)
-  - al_court_bundle: ALDocumentBundle.using(elements=[financial_disclosure_attachment],  filename="financial_disclosure", title="All forms to deliver to court", enabled=True)
+#objects:
+#  - al_user_bundle: ALDocumentBundle.using(elements=[financial_disclosure_Post_interview_instructions, financial_disclosure_attachment], filename="financial_disclosure", title="All forms to download", enabled=False)
+#  - al_court_bundle: ALDocumentBundle.using(elements=[financial_disclosure_attachment],  filename="financial_disclosure", title="All forms to deliver to court", enabled=True)
 ---
 attachment:
   variable name: financial_disclosure_attachment.addendum
@@ -2425,24 +2427,24 @@ code: |
 # Each attachment defines a key in an ALDocument. We use `i` as the placeholder here so the same template is 
 # used for "preview" and "final" keys, and logic in the template checks the value of 
 # `i` to show or hide the user's signature
-attachment:
-  name: Post-interview-Instructions
-  filename: financial_disclosure_next_steps
-  docx template file: financial_disclosure_next_steps.docx
-  variable name: financial_disclosure_Post_interview_instructions[i]
-  skip undefined: True
-  fields:
-    - "address_county": ${ trial_court.address.county }
-    - "court_division": ${ trial_court.division }
-    - "name": ${ trial_court }
-    - "address_address": ${ trial_court.address.address }
-    - "address_unit": ${ trial_court.address.unit }
-    - "address_city": ${ trial_court.address.city }
-    - "address_state": ${ trial_court.address.state }
-    - "address_zip": ${ trial_court.address.zip }
-    - "arbitrary_attribute": Mailing address
-    - "phone": ${ trial_court.phone }
-    - "email": ${ trial_court.email }
+#attachment:
+#  name: Post-interview-Instructions
+#  filename: financial_disclosure_next_steps
+#  docx template file: financial_disclosure_next_steps.docx
+#  variable name: financial_disclosure_Post_interview_instructions[i]
+#  skip undefined: True
+#  fields:
+#    - "address_county": ${ trial_court.address.county }
+#    - "court_division": ${ trial_court.division }
+#    - "name": ${ trial_court }
+#    - "address_address": ${ trial_court.address.address }
+#    - "address_unit": ${ trial_court.address.unit }
+#    - "address_city": ${ trial_court.address.city }
+#    - "address_state": ${ trial_court.address.state }
+#    - "address_zip": ${ trial_court.address.zip }
+#    - "arbitrary_attribute": Mailing address
+#    - "phone": ${ trial_court.phone }
+#    - "email": ${ trial_court.email }
 ---
 attachment:
   name: financial disclosure form
@@ -2698,8 +2700,8 @@ attachment:
       - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
       - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
         
-      - "users1_signature": ${ users[0].signature_if_final(i) }
-      - "signature_date": ${ signature_date }
+      #- "users1_signature": ${ users[0].signature_if_final(i) }
+      #- "signature_date": ${ signature_date }
       - "users1_mailing_address_line_one": ${ users[0].mailing_address.line_one() }
       - "users1_mailing_address_line_two": ${ users[0].mailing_address.line_two() }
       - "Address 3": ${ Address_3 }
