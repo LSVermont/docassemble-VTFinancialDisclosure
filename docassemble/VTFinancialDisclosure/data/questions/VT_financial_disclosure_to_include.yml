@@ -116,13 +116,14 @@ code: |
   set_progress(14)
   
   jobs.gather()
+  if len(jobs) > 0:
+    review_jobs
+  set_progress(28)
+  
   employer_jobs
   self_employed_jobs
   employer_jobs_review_table
   self_employed_jobs_review_table
-  if len(jobs) > 0:
-    review_jobs
-  set_progress(28)
 
 
   
