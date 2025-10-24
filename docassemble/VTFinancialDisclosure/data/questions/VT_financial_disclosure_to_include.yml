@@ -2700,8 +2700,8 @@ attachment:
       - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
       - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
         
-      #- "users1_signature": ${ users[0].signature_if_final(i) }
-      #- "signature_date": ${ signature_date }
+      - "users1_signature": ${ users[0].signature_if_final(i) }
+      - "signature_date": ${ signature_date }
       - "users1_mailing_address_line_one": ${ users[0].mailing_address.line_one() }
       - "users1_mailing_address_line_two": ${ users[0].mailing_address.line_two() }
       - "Address 3": ${ Address_3 }
