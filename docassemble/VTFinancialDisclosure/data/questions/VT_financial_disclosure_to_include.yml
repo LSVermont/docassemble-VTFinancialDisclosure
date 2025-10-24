@@ -431,6 +431,19 @@ code: |
       x.employer.name.first    
   x.complete = True
 ---
+code: |
+  jobs[i].source
+  jobs[i].wages_added
+  jobs[i].to_add.gather()
+  if jobs[i].is_self_employed:
+    jobs[i].times_per_year
+    # for fee waiver form we are not collecting items to subtract from wages
+    # jobs[i].to_subtract.gather()
+  else:
+    if not jobs[i].is_self_employed:
+      jobs[i].employer.name.first    
+  jobs[i].complete = True
+---
 generic object: ALItemizedValueDict
 code: |
   x.times_per_year
