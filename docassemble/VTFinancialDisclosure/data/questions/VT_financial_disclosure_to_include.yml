@@ -1181,6 +1181,7 @@ continue button field: household_recap
 ---
 variable name: other_incomes.terms_ordered
 data: !!omap
+  - investments: "Income from investments"
   - unemployment income: "Unemployment benefits"
   - child support income: "Child support"
   - other: "Other"
@@ -2141,6 +2142,22 @@ review:
       % endif
       
   - Edit: 
+      - other_incomes.revisit
+      - follow up:
+        - users1_income_very_different_30_days_amount
+    button: |
+      **Your other incomes**
+      
+      Edit, add or delete information about your other incomes (if any)
+
+      % if len(other_incomes) > 0:
+      % for item in other_incomes:
+      * ${ item.display_name }
+      % endfor
+      % else:
+      * None
+      % endif
+  - Edit: 
       - household_others.revisit
       - recompute:
         - household_size
@@ -2559,7 +2576,7 @@ attachment:
       - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="wages", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="self employment", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="unemployment", times_per_year = 12) for member in household_others.complete_elements() ])) }
-      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="child suppport", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="child support", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="public benefits", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="investments", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="other", times_per_year = 12) for member in household_others.complete_elements() ])) }
