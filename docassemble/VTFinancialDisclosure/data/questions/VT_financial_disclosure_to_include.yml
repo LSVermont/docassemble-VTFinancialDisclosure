@@ -2566,8 +2566,8 @@ attachment:
           % else:
           ${ "{:.2f}".format(jobs.gross_total(source=["self employed"],times_per_year=12), 2) }
           % endif
-      - "users1_income_child_support_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['child support'], times_per_year=12)) }
-      - "users1_income_investments_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['investments'], times_per_year=12)) }
+      - "users1_income_child_support_monthly_amount_FD": ${ "{:.2f}".format(other_incomes.total(source=['child support'], times_per_year=12)) }
+      - "users1_income_investments_monthly_amount_FD": ${ "{:.2f}".format(other_incomes.total(source=['investments'], times_per_year=12)) }
       - "users1_income_unemployment_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['unemployment income'], times_per_year=12)) } 
       - "users1_income_other_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['other'], times_per_year=12)) }
       - "users1_income_monthly_total": |
