@@ -2175,6 +2175,24 @@ review:
       % else:
       **Edit employer name and address:** ${ jobs[3].employer.name.first }
       % endif
+
+  - Edit: 
+      - other_incomes.revisit
+      - follow up:
+        - users1_income_very_different_30_days_amount
+    button: |
+      **Your other incomes**
+      
+      Edit, add or delete information about your other incomes (if any)
+
+      % if len(other_incomes) > 0:
+      % for item in other_incomes:
+      * ${ item.display_name }
+      % endfor
+      % else:
+      * None
+      % endif
+
       
   - Edit: 
       - household_others.revisit
