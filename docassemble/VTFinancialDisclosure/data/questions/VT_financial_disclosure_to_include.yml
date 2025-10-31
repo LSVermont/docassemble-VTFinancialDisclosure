@@ -1072,7 +1072,7 @@ data: !!omap
   - wages: "Wages (amount before taxes are taken out)"
   - self employment: "Self employment"
   - unemployment: "Unemployment"
-  - child support: "Child support income"
+  - child support income: "Child support income"
   - investments: "Income from investments"
   - other: "Other income (including SSDI and Social Security)"
 ---
@@ -1168,7 +1168,7 @@ subquestion: |
   
   - Unemployment: ${ currency(member.income.total(source = "unemployment", times_per_year = 12)) }
   
-  - Child support: ${ currency(member.income.total(source = "child support", times_per_year = 12)) }
+  - Child support: ${ currency(member.income.total(source = "child support income", times_per_year = 12)) }
   
   - Investment income: ${ currency(member.income.total(source = "investments", times_per_year = 12)) }
   
@@ -2566,7 +2566,7 @@ attachment:
           % else:
           ${ "{:.2f}".format(jobs.gross_total(source=["self employed"],times_per_year=12), 2) }
           % endif
-      - "users1_income_child_support_monthly_amount_FD": ${ "{:.2f}".format(other_incomes.total(source=['child support'], times_per_year=12)) }
+      - "users1_income_child_support_monthly_amount_FD": ${ "{:.2f}".format(other_incomes.total(source=['child support income'], times_per_year=12)) }
       - "users1_income_investments_monthly_amount_FD": ${ "{:.2f}".format(other_incomes.total(source=['investments'], times_per_year=12)) }
       - "users1_income_unemployment_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['unemployment income'], times_per_year=12)) } 
       - "users1_income_other_monthly_amount": ${ "{:.2f}".format(other_incomes.total(source=['other'], times_per_year=12)) }
@@ -2576,7 +2576,7 @@ attachment:
       - "household_others_income_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="wages", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_self_employment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="self employment", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_unemployment_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="unemployment", times_per_year = 12) for member in household_others.complete_elements() ])) }
-      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="child support", times_per_year = 12) for member in household_others.complete_elements() ])) }
+      - "household_others_income_child_support_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="child support income", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_benefits_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="public benefits", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_investments_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="investments", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="other", times_per_year = 12) for member in household_others.complete_elements() ])) }
