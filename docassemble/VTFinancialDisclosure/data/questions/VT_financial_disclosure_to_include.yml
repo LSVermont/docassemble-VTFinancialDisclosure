@@ -2495,7 +2495,7 @@ attachment:
       - "docket_number": ${ docket_number }
       - "users1_name_full": ${ users[0] }
       - "users1_name_full__1": ${ users[0] }
-      - "users1_birth_month": ${ format_date(users[0].birthdate, format='M') }
+      - "users1_birth_month": ${ format_date(users[0].birthdate, format='MM') }
       - "users1_birth_day": ${ format_date(users[0].birthdate, format='dd') }
       - "users1_birth_year": ${ format_date(users[0].birthdate, format='yyyy') }
       - "users1_address_line_one": ${ users[0].address.line_one() }
@@ -2732,8 +2732,18 @@ attachment:
         
       - "users1_signature": ${ users[0].signature_if_final(i) }
       - "signature_date": ${ signature_date }
-      - "users1_mailing_address_line_one": ${ users[0].mailing_address.line_one() }
-      - "users1_mailing_address_line_two": ${ users[0].mailing_address.line_two() }
+      - "users1_mailing_address_line_one": |
+          % if users1_mailing_address_different:
+          ${ users[0].mailing_address.line_one() }
+          % else:
+          ${ users[0].address.line_one() }
+          % endif
+      - "users1_mailing_address_line_two": |
+          % if users1_mailing_address_different:
+          ${ users[0].mailing_address.line_two() }
+          % else:
+          ${ users[0].address.line_two() }
+          % endif
       - "Address 3": ${ Address_3 }
       - "users1_email__1": ${ users[0].email }
 
