@@ -2582,7 +2582,7 @@ attachment:
       - "household_others_income_other_monthly_amount": ${ "{:.2f}".format(sum([ member.income.total(source="other", times_per_year = 12) for member in household_others.complete_elements() ])) }
       - "household_others_income_monthly_total": ${ "{:.2f}".format(sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ])) }
 
-      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + public_benefits.total(times_per_year=12)) + (sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ]))) }
+      - "total_income_monthly_total": ${ "{:.2f}".format(other_incomes.total(times_per_year = 12) + jobs.total(times_per_year = 12) + public_benefits.total(times_per_year=12) + (sum([ member.income.total(times_per_year = 12) for member in household_others.complete_elements() ]))) }
         
       - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
       - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
