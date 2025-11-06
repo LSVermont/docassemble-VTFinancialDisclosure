@@ -76,18 +76,25 @@ code: |
   al_menu_items = al_menu_items_tmp
   del al_menu_items_tmp
 ---
-sections:
-  - intro: Is this tool right for you
-  - case_info: Your court case
-  - about_you: About you
-  - your_income: Your income
-  - your_household: Household members and their incomes
-  - your_expenses: Your expenses
-  - your_assets: Your property and assets
-  - review_financial_disclosure: <i class="fa-solid fa-pencil"></i> <u>Edit your answers</u>
-  - sign: Sign your document
-  - get_docs: Download your document
-progressive: False
+#sections:
+#  - intro: Is this tool right for you
+#  - case_info: Your court case
+#  - about_you: About you
+#  - your_income: Your income
+#  - your_household: Household members and their incomes
+#  - your_expenses: Your expenses
+#  - your_assets: Your property and assets
+#  - review_financial_disclosure: <i class="fa-solid fa-pencil"></i> <u>Edit your answers</u>
+#  - sign: Sign your document
+#  - get_docs: Download your document
+#progressive: False
+---
+code: |
+  enable_al_nav_sections = True
+---
+code: |
+  reconsider("al_nav_sections")
+  reconsider_nav_once = True
 ---
 #################### Interview order #####################
 comment: |
@@ -96,7 +103,7 @@ id: interview_order_financial_disclosure
 code: |
   # Set the allowed courts for this interview
   allowed_courts = []
-
+  reconsider_nav_once
   lets_start_financial_disclosure
   acknowledged_information_use
   
