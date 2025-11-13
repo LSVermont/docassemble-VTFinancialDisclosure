@@ -145,7 +145,8 @@ code: |
   household_others.gather()
   if household_others.there_are_any == True:
     household_recap
-  household_size
+  else:
+    household_size
 
   users1_income_very_different_30_days
 
@@ -1067,10 +1068,21 @@ code: |
   household_others.gathered = True
 ---
 code: |
-  if household_others.number_gathered() == 0:
-    household_size = 1
-  else:
-    household_size = household_others.number_gathered() + 1
+  if defined("household_others.target_number"):
+    if household_others.number_gathered() == 0:
+      household_size = 1
+    else:
+      household_size = household_others.number_gathered() + 1
+---
+id: About your household
+question: |
+  About you and your household
+subquestion: |
+  How many people live in your household? Include yourself, any spouse, partner, and dependents such as children.
+fields:
+  - "Household size": household_size
+    datatype: integer
+    min: 0
 ---
 id: household_others income
 variable name: household_others[i].income.terms_ordered
