@@ -2606,6 +2606,10 @@ attachment:
       - "users1_income_very_different_30_days_yes": ${ users1_income_very_different_30_days }
       - "users1_income_very_different_30_days_no": ${ not users1_income_very_different_30_days }
 
+      - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
+      - "household_income_very_different_30_days_amount": ${ "{:.2f}".format((household_income_very_different_30_days_amount) + (users1_income_very_different_30_days_amount)) }
+      - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
+      
       - "users1_expenses_rent_mortgage_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["rent"],times_per_year=12) + expenses.total(source=["mortgage"],times_per_year=12)) } 
       - "users1_expenses_electric_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["electric"],times_per_year=12)) } 
       - "users1_expenses_food_monthly_amount": ${ "{:.2f}".format(expenses.total(source=["food"],times_per_year=12)) } 
@@ -2744,10 +2748,6 @@ attachment:
           ${ household_others[2].income.matches(source=['wages'])[0].employer_name if household_others[2].income.total(source=['wages']) > 0 else "" }
       - "household_others_3_employed_employer_address": |
           ${ household_others[2].income.matches(source=['wages'])[0].employer_address_on_one_line if household_others[2].income.total(source="wages") > 0 else "" }
-        
-      - "users1_income_very_different_30_days_amount": ${ "{:.2f}".format(users1_income_very_different_30_days_amount) }
-      - "household_income_very_different_30_days_amount": ${ "{:.2f}".format(household_income_very_different_30_days_amount) }
-      - "users1_income_very_different_30_days_why": ${ users1_income_very_different_30_days_why }
         
       - "users1_signature": ${ users[0].signature_if_final(i) }
       - "signature_date": ${ signature_date }
