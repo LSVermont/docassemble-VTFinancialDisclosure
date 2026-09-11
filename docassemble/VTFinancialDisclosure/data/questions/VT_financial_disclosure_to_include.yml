@@ -2,7 +2,7 @@
 comment: |
   This is the financial disclosure to_include file that is used in other guided interviews.
 
-  We are working to integrate it into the Small Claims Answer interview.
+  It is used in the Small Claims Answer interview and the Superior Court Debt Answer interview.
 
 ---
 include:
@@ -180,31 +180,31 @@ code: |
   interview_order_financial_disclosure = True
 ---
 ###################### Main order ######################
-comment: |
-  This block includes the logic for standalone interviews.
-  Delete mandatory: True to include in another interview
-code: |
-  al_intro_screen
-  interview_order_financial_disclosure
-  nav.set_section("review_financial_disclosure")
-  trial_court.address.county
-  financial_disclosure_preview_question
-  set_progress(90)
-  nav.set_section("sign")
-  signature_date
-  set_progress(95)
-  al_form_requires_digital_signature = False
-  basic_questions_signature_flow
-
-  # Store anonymous data for analytics / statistics
-  store_variables_snapshot(
-      persistent=True,
-      data={
-          "zip": showifdef("users[0].address.zip"),
-          "reached_interview_end": True,
-      },
-  )
-  financial_disclosure_download
+#comment: |
+#  This block includes the logic for standalone interviews.
+#  Delete mandatory: True to include in another interview
+#code: |
+#  al_intro_screen
+#  interview_order_financial_disclosure
+#  nav.set_section("review_financial_disclosure")
+#  trial_court.address.county
+#  financial_disclosure_preview_question
+#  set_progress(90)
+#  nav.set_section("sign")
+#  signature_date
+#  set_progress(95)
+#  al_form_requires_digital_signature = False
+#  basic_questions_signature_flow
+#
+#  # Store anonymous data for analytics / statistics
+#  store_variables_snapshot(
+#      persistent=True,
+#      data={
+#          "zip": showifdef("users[0].address.zip"),
+#          "reached_interview_end": True,
+#      },
+#  )
+#  financial_disclosure_download
 ---
 id: lets start financial disclosure
 question: |
@@ -216,15 +216,15 @@ subquestion: |
 
 continue button field: lets_start_financial_disclosure
 ---
-event: edit_answers_screen
-id: edit answers screen
-question: |
-  Edit your answers
-subquestion: |
-  ${ action_button_html(url_action('review_financial_disclosure'), label='<i class="fa-solid fa-pencil"></i> Edit your answers', color='info') }
-  
-  Remember to come back to this screen to continue.
-continue button field: financial_disclosure_preview_question
+#event: edit_answers_screen
+#id: edit answers screen
+#question: |
+#  Edit your answers
+#subquestion: |
+#  ${ action_button_html(url_action('review_financial_disclosure'), label='<i class="fa-solid fa-pencil"></i> Edit your answers', color='info') }
+#  
+#  Remember to come back to this screen to continue.
+#continue button field: financial_disclosure_preview_question
 ---
 id: basic questions intro screen
 question: |
@@ -2000,49 +2000,49 @@ edit:
 
 
 ######################### PREVIEW SCREEN ################################
+#---
+#id: preview financial_disclosure
+#question: |
+#  Preview your form before you sign it
+#subquestion: |
+#  Here is a preview of the form you will sign on the next page.   
+#  
+#  ${ al_court_bundle.as_pdf(key='preview') }
+#
+#  Click the image to open it in a new tab. Click the "Edit answers" button
+#  to edit your answers. **Do not edit the PDF itself.** Use the Edit your answers button.
+#
+#  ${ action_button_html(url_action('review_financial_disclosure'), label='Edit your answers', color='info') }
+#  
+#  **Remember to come back to this window to continue and sign your form.**
+#continue button field: financial_disclosure_preview_question    
 ---
-id: preview financial_disclosure
-question: |
-  Preview your form before you sign it
-subquestion: |
-  Here is a preview of the form you will sign on the next page.   
-  
-  ${ al_court_bundle.as_pdf(key='preview') }
-
-  Click the image to open it in a new tab. Click the "Edit answers" button
-  to edit your answers. **Do not edit the PDF itself.** Use the Edit your answers button.
-
-  ${ action_button_html(url_action('review_financial_disclosure'), label='Edit your answers', color='info') }
-  
-  **Remember to come back to this window to continue and sign your form.**
-continue button field: financial_disclosure_preview_question    
----
-code: |
-  signature_fields = ['users[0].signature']
----
-id: signature choice
-decoration: file-signature
-question: |
-  Your document is almost ready
-subquestion: |
-  How do you want to sign it?
-fields: 
-  - I will sign: signature_choice
-    input type: radio
-    choices:
-      - On my computer or phone: this_device
-    show if:
-      code: |
-        al_form_requires_digital_signature
-  - I will sign: signature_choice
-    input type: radio
-    choices:
-      - On my computer or phone: this_device
-      - On the paper with a pen after I print the documents: sign_after_printing
-    show if:
-      code: |
-        not al_form_requires_digital_signature
-continue button field: saw_signature_choice    
+#code: |
+#  signature_fields = ['users[0].signature']
+#---
+#id: signature choice
+#decoration: file-signature
+#question: |
+#  Your document is almost ready
+#subquestion: |
+#  How do you want to sign it?
+#fields: 
+#  - I will sign: signature_choice
+#    input type: radio
+#    choices:
+#      - On my computer or phone: this_device
+#    show if:
+#      code: |
+#        al_form_requires_digital_signature
+#  - I will sign: signature_choice
+#    input type: radio
+#    choices:
+#      - On my computer or phone: this_device
+#      - On the paper with a pen after I print the documents: sign_after_printing
+#    show if:
+#      code: |
+#        not al_form_requires_digital_signature
+#continue button field: saw_signature_choice    
 ---
 code: |
   # This is a placeholder for the addresses that will be searched
@@ -2765,6 +2765,4 @@ attachment:
           % endif
       - "Address 3": ${ Address_3 }
       - "users1_email__1": ${ users[0].email }
-
-
-
+---
