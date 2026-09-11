@@ -1,16 +1,15 @@
 [build-system]
 requires = [
-    "setuptools==80.9.0",
+    "setuptools>=80.9.0",
 ]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "docassemble.VTFinancialDisclosure"
-version = "1.0"
+version = "1.1"
 description = "Financial Disclosure - form 100-00127"
 readme = "README.md"
 dependencies = [
-    "docassemble.ALToolbox @ git+https://github.com/SuffolkLITLab/docassemble-ALToolbox.git@main",
     "docassemble.AssemblyLine @ git+https://github.com/SuffolkLITLab/docassemble-AssemblyLine.git@main",
     "docassemble.GithubFeedbackForm @ git+https://github.com/SuffolkLITLab/docassemble-GithubFeedbackForm.git@main",
     "docassemble.VTFeedback @ git+https://github.com/VTskier/docassemble-VTFeedback.git@main",
